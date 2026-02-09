@@ -1,0 +1,515 @@
+.signature-setup-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.signature-setup-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.signature-step {
+  padding: 48px 40px;
+}
+
+.signature-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.signature-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.signature-header p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.signature-intro {
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 32px;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.signature-intro p {
+  margin: 0;
+}
+
+/* Choose Step */
+.signature-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.option-card {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-family: inherit;
+}
+
+.option-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  transform: translateY(-2px);
+}
+
+.option-icon {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.option-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 8px 0 0 0;
+}
+
+.option-description {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.btn-skip {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-skip:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #4b5563;
+}
+
+/* Pre-made Signatures */
+.premade-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.signature-option {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.2s;
+}
+
+.signature-option.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.option-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.signature-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.signature-text {
+  font-family: 'Brush Script MT', cursive;
+  font-size: 32px;
+  color: #1f2937;
+  font-style: italic;
+}
+
+.initials-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.initials-text {
+  font-family: 'Brush Script MT', cursive;
+  font-size: 48px;
+  color: #1f2937;
+  font-style: italic;
+}
+
+.signature-description {
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.signature-description p {
+  margin: 0;
+}
+
+/* Draw Signature */
+.draw-progress-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.progress-step {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.progress-step.active {
+  background: #2563eb;
+  color: white;
+}
+
+.progress-step.completed {
+  background: #10b981;
+  color: white;
+}
+
+.progress-arrow {
+  display: flex;
+  align-items: center;
+  color: #d1d5db;
+}
+
+.draw-signature-container {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.signature-canvas {
+  width: 100%;
+  height: 150px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  cursor: crosshair;
+  display: block;
+}
+
+.canvas-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #d1d5db;
+  font-size: 14px;
+  pointer-events: none;
+  margin: 0;
+}
+
+.draw-signature-instructions {
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.draw-signature-instructions p {
+  margin: 0;
+}
+
+/* Preview */
+.signature-preview-box {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.preview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.preview-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.preview-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.preview-signature {
+  font-family: 'Brush Script MT', cursive;
+  font-size: 32px;
+  color: #1f2937;
+  font-style: italic;
+}
+
+.preview-initials {
+  font-family: 'Brush Script MT', cursive;
+  font-size: 48px;
+  color: #1f2937;
+  font-style: italic;
+}
+
+.preview-image {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: white;
+  padding: 8px;
+}
+
+/* Actions */
+.signature-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.action-spacer {
+  flex: 1;
+}
+
+.btn-back {
+  padding: 12px 24px;
+  background: white;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.btn-back:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.btn-secondary {
+  padding: 12px 24px;
+  background: #f3f4f6;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-confirm {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .signature-setup-modal {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .signature-step {
+    padding: 32px 24px;
+  }
+
+  .signature-header h1 {
+    font-size: 24px;
+  }
+
+  .signature-options {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .premade-signatures {
+    grid-template-columns: 1fr;
+  }
+
+  .signature-actions {
+    flex-wrap: wrap;
+  }
+
+  .btn-back,
+  .btn-confirm,
+  .btn-secondary {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .action-spacer {
+    flex: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .signature-step {
+    padding: 24px 16px;
+  }
+
+  .signature-header h1 {
+    font-size: 22px;
+  }
+
+  .signature-header p {
+    font-size: 13px;
+  }
+
+  .option-card {
+    padding: 16px 12px;
+  }
+
+  .option-title {
+    font-size: 14px;
+  }
+
+  .signature-text {
+    font-size: 24px;
+  }
+
+  .initials-text {
+    font-size: 36px;
+  }
+}
+
+/* Scrollbar styling */
+.signature-setup-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.signature-setup-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.signature-setup-modal::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.signature-setup-modal::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

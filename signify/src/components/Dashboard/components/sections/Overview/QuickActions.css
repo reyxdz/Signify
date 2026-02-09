@@ -1,0 +1,89 @@
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: none;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.action-button.primary {
+  background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.3);
+}
+
+.action-button.primary:hover {
+  background: linear-gradient(135deg, #0052cc 0%, #003d99 100%);
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.action-button.primary:active {
+  transform: translateY(0);
+}
+
+.action-button.secondary {
+  background: white;
+  color: #0066ff;
+  border: 2px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.action-button.secondary:hover {
+  border-color: #0066ff;
+  background: #f0f5ff;
+  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.action-button.secondary:active {
+  transform: translateY(0);
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .quick-actions {
+    gap: 10px;
+  }
+
+  .action-button {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-actions {
+    gap: 8px;
+  }
+
+  .action-button {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .action-button span {
+    display: none;
+  }
+}

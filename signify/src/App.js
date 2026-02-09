@@ -6,6 +6,7 @@ import CTA from './components/CTA/CTA';
 import Footer from './components/Footer/Footer';
 import LoginModal from './components/Modals/LoginModal/LoginModal';
 import SignupModal from './components/Modals/SignupModal/SignupModal';
+import SignatureSetupModal from './components/Modals/SignatureSetupModal/SignatureSetupModal';
 import Dashboard from './components/Dashboard/Dashboard';
 import './App.css';
 
@@ -14,6 +15,7 @@ function App() {
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
 
   // Check if user is already logged in on component mount
   useEffect(() => {
@@ -53,7 +55,19 @@ function App() {
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setIsLoggedIn(true);
+    
+    // Check if user has a signature stored in their profile
+    // signature will be null if no signature exists
+    if (!userData.signature) {
+      setShowSignatureModal(true);
+    }
+    
     handleCloseModals();
+  };
+
+  const handleSignatureComplete = (signatureData) => {
+    setShowSignatureModal(false);
+    // Signature is already saved to backend in the modal
   };
 
   const handleLogout = () => {
@@ -61,9 +75,14 @@ function App() {
     setUser(null);
   };
 
-  // If user is logged in, show dashboard
-  if (isLoggedIn && user) {
+  // If user is logged in and signature setup is complete, show dashboard
+  if (isLoggedIn && user && !showSignatureModal) {
     return <Dashboard user={user} onLogout={handleLogout} />;
+  }
+
+  // If user is logged in but needs to set up signature, show modal
+  if (isLoggedIn && user && showSignatureModal) {
+    return <SignatureSetupModal user={user} onComplete={handleSignatureComplete} />;
   }
 
   // Otherwise, show landing page
@@ -88,6 +107,10 @@ function App() {
           onClose={handleCloseModals} 
           onSwitchToLogin={handleSwitchToLogin}
         />
+      )}
+
+      {showSignatureModal && (
+        <SignatureSetupModal user={user} onComplete={handleSignatureComplete} />
       )}
     </div>
   );
