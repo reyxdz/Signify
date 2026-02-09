@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header/Header';
 import Hero from './components/Hero/Hero';
 import Features from './components/Features/Features';
@@ -8,6 +9,7 @@ import LoginModal from './components/Modals/LoginModal/LoginModal';
 import SignupModal from './components/Modals/SignupModal/SignupModal';
 import SignatureSetupModal from './components/Modals/SignatureSetupModal/SignatureSetupModal';
 import Dashboard from './components/Dashboard/Dashboard';
+import DocumentEditorPage from './pages/DocumentEditorPage';
 import './App.css';
 
 function App() {
@@ -73,11 +75,20 @@ function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   // If user is logged in and signature setup is complete, show dashboard
   if (isLoggedIn && user && !showSignatureModal) {
-    return <Dashboard user={user} onLogout={handleLogout} />;
+    return (
+      <Router>
+        <Routes>
+          <Route path="/document/:documentId" element={<DocumentEditorPage user={user} />} />
+          <Route path="/*" element={<Dashboard user={user} onLogout={handleLogout} />} />
+        </Routes>
+      </Router>
+    );
   }
 
   // If user is logged in but needs to set up signature, show modal
@@ -87,32 +98,38 @@ function App() {
 
   // Otherwise, show landing page
   return (
-    <div className="App">
-      <Header onSignInClick={handleSignInClick} />
-      <Hero onSignUpClick={handleSignUpClick} />
-      <Features />
-      <CTA onSignUpClick={handleSignUpClick} />
-      <Footer />
+    <Router>
+      <Routes>
+        <Route path="/*" element={
+          <div className="App">
+            <Header onSignInClick={handleSignInClick} />
+            <Hero onSignUpClick={handleSignUpClick} />
+            <Features />
+            <CTA onSignUpClick={handleSignUpClick} />
+            <Footer />
 
-      {showLoginModal && (
-        <LoginModal 
-          onClose={handleCloseModals} 
-          onSwitchToSignup={handleSwitchToSignup}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      )}
+            {showLoginModal && (
+              <LoginModal 
+                onClose={handleCloseModals} 
+                onSwitchToSignup={handleSwitchToSignup}
+                onLoginSuccess={handleLoginSuccess}
+              />
+            )}
 
-      {showSignupModal && (
-        <SignupModal 
-          onClose={handleCloseModals} 
-          onSwitchToLogin={handleSwitchToLogin}
-        />
-      )}
+            {showSignupModal && (
+              <SignupModal 
+                onClose={handleCloseModals} 
+                onSwitchToLogin={handleSwitchToLogin}
+              />
+            )}
 
-      {showSignatureModal && (
-        <SignatureSetupModal user={user} onComplete={handleSignatureComplete} />
-      )}
-    </div>
+            {showSignatureModal && (
+              <SignatureSetupModal user={user} onComplete={handleSignatureComplete} />
+            )}
+          </div>
+        } />
+      </Routes>
+    </Router>
   );
 }
 

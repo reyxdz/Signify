@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FileText, PenTool, Users, CheckCircle, Upload, Layout, Share2, Edit2, Trash2 } from 'lucide-react';
-import DocumentEditor from '../../../../DocumentEditor/DocumentEditor';
+import { useNavigate } from 'react-router-dom';
 import './OverviewPage.css';
 
 const OverviewPage = ({ user }) => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalDocuments: 0,
     totalSignatures: 0,
@@ -13,7 +14,6 @@ const OverviewPage = ({ user }) => {
 
   const [recentDocuments, setRecentDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingDocument, setEditingDocument] = useState(null);
   const fetchDataRef = useRef(null);
 
   // Function to fetch all overview data
@@ -78,23 +78,16 @@ const OverviewPage = ({ user }) => {
   };
 
   const handleEditDocument = (doc) => {
-    setEditingDocument(doc);
+    navigate(`/document/${doc._id || doc.id}`);
   };
 
   const handleCloseEditor = () => {
-    setEditingDocument(null);
+    // No longer needed since we're using page navigation
   };
 
   const handleSaveDocument = async (data) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Please log in first');
-        return;
-      }
-
       // The endpoint was already called in DocumentEditor, just refresh data
-      handleCloseEditor();
       // Refetch the overview data
       if (fetchDataRef.current) {
         fetchDataRef.current();
@@ -298,9 +291,3 @@ const OverviewPage = ({ user }) => {
           onClose={handleCloseEditor}
           onSave={handleSaveDocument}
         />
-      )}
-    </div>
-  );
-};
-
-export default OverviewPage;
