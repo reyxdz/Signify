@@ -1,11 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Save, X, Type } from 'lucide-react';
+import { ArrowLeft, Save, Type } from 'lucide-react';
 import SignatureCanvas from './SignatureCanvas';
 import './DocumentEditor.css';
 
 const DocumentEditor = ({ document, onClose, onSave }) => {
   const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [signatures, setSignatures] = useState([]);
   const [selectedSignature, setSelectedSignature] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
