@@ -1,8 +1,8 @@
 import React from 'react';
-import { FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Clock, CheckCircle, AlertCircle, Edit2 } from 'lucide-react';
 import './DocumentList.css';
 
-const DocumentList = ({ documents, isLoading }) => {
+const DocumentList = ({ documents, isLoading, onEdit }) => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'signed':
@@ -73,6 +73,14 @@ const DocumentList = ({ documents, isLoading }) => {
           <div className="document-status-container">
             {getStatusBadge(doc.status || 'pending')}
           </div>
+          <button
+            className="document-action-btn edit-btn"
+            onClick={() => onEdit && onEdit(doc)}
+            title="Edit document"
+          >
+            <Edit2 size={16} />
+            <span>Edit</span>
+          </button>
         </div>
       ))}
     </div>
