@@ -1,8 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ArrowLeft, Save, Type, X } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
 import FieldsSidebar from './FieldsSidebar';
 import SignatureCanvas from './SignatureCanvas';
 import './DocumentEditor.css';
+
+// Set up worker for PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const DocumentEditor = ({ document, onClose, onSave }) => {
   const canvasRef = useRef(null);
@@ -17,42 +21,58 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
     const canvas = canvasRef.current;
     if (!canvas || !document) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const loadPDF = async () => {
+      try {
+        // For now, we'll render a placeholder since we don't have actual PDF file data
+        // In production, you'd load the actual PDF from document.fileData or URL
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-    // For now, we'll create a placeholder document view
-    // In production, you would load actual PDF using pdf.js or similar
-    canvas.width = 800;
-    canvas.height = 1000;
+        // Set canvas size
+        canvas.width = 800;
+        canvas.height = 1000;
 
-    // Draw white background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Draw white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw border
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        // Draw border
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-    // Draw placeholder document content
-    ctx.fillStyle = '#1f2937';
-    ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
-    ctx.fillText(document?.name || 'Document', 40, 60);
+        // Draw document header
+        ctx.fillStyle = '#1f2937';
+        ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+        ctx.fillText(document?.name || 'Document', 40, 60);
 
-    ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
-    ctx.fillStyle = '#6b7280';
-    ctx.fillText(`Status: ${document?.status || 'draft'}`, 40, 100);
-    ctx.fillText(`Created: ${new Date(document?.createdAt).toLocaleDateString()}`, 40, 130);
+        // Draw document metadata
+        ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText(`Status: ${document?.status || 'draft'}`, 40, 100);
+        ctx.fillText(`Created: ${new Date(document?.createdAt).toLocaleDateString()}`, 40, 120);
 
-    // Draw placeholder content lines
-    ctx.strokeStyle = '#f0f0f0';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 20; i++) {
-      ctx.beginPath();
-      ctx.moveTo(40, 160 + i * 30);
-      ctx.lineTo(760, 160 + i * 30);
-      ctx.stroke();
-    }
+        // Draw content area lines (simulate document content)
+        ctx.strokeStyle = '#f0f0f0';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 25; i++) {
+          ctx.beginPath();
+          ctx.moveTo(40, 150 + i * 30);
+          ctx.lineTo(760, 150 + i * 30);
+          ctx.stroke();
+        }
+
+        // Add sample text
+        ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+        ctx.fillStyle = '#374151';
+        ctx.fillText('Document content would appear here', 60, 180);
+        ctx.fillText('This is a placeholder for the actual document', 60, 210);
+      } catch (error) {
+        console.error('Error loading document:', error);
+      }
+    };
+
+    loadPDF();
   }, [document, zoom]);
 
   const handleAddSignature = (sig) => {
