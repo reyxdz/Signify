@@ -100,9 +100,27 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  overflow: auto;
+  overflow-y: scroll;
+  overflow-x: hidden;
   background: linear-gradient(135deg, #f8f9fa 0%, #f0f2f5 100%);
   position: relative;
+}
+
+.document-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.document-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.document-area::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.document-area::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .document-wrapper {
@@ -114,7 +132,6 @@
   transform-origin: top center;
   transition: transform 0.2s ease;
   max-width: 90%;
-  max-height: 90vh;
   width: auto;
   height: auto;
   aspect-ratio: 8.5 / 11;
@@ -266,11 +283,15 @@
 }
 
 .zoom-display {
-  min-width: 48px;
+  min-width: 60px;
   text-align: center;
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary-color);
+  background: #f0f4ff;
+  padding: 4px 12px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
 }
 
 /* Sidebar */
