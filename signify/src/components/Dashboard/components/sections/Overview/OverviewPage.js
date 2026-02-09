@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FileText, PenTool, Users, CheckCircle, Upload, Layout, Share2, Edit2, Trash2 } from 'lucide-react';
-import DocumentEditor from '../../../DocumentEditor/DocumentEditor';
+import DocumentEditor from '../../../../DocumentEditor/DocumentEditor';
 import './OverviewPage.css';
 
 const OverviewPage = ({ user }) => {
