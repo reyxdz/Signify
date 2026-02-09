@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FileText, PenTool, Users, CheckCircle, Upload, Layout, Share2, Edit2, Trash2 } from 'lucide-react';
 import DocumentEditorModal from '../../../Modals/DocumentEditorModal/DocumentEditorModal';
+import useDocumentEditor from './hooks/useDocumentEditor';
 import './OverviewPage.css';
 
 const OverviewPage = ({ user }) => {
@@ -13,9 +14,16 @@ const OverviewPage = ({ user }) => {
 
   const [recentDocuments, setRecentDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showEditorModal, setShowEditorModal] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState(null);
   const fetchDataRef = useRef(null);
+
+  // Document editor state management
+  const {
+    showEditorModal,
+    selectedDocument,
+    openEditor,
+    closeEditor,
+    saveDocument,
+  } = useDocumentEditor(fetchAllData);
 
   // Function to fetch all overview data
   const fetchAllData = async () => {
@@ -79,13 +87,11 @@ const OverviewPage = ({ user }) => {
   };
 
   const handleEditDocument = (doc) => {
-    setSelectedDocument(doc);
-    setShowEditorModal(true);
+    openEditor(doc);
   };
 
   const handleCloseEditor = () => {
-    setShowEditorModal(false);
-    setSelectedDocument(null);
+    closeEditor();
   };
 
   const handleSaveDocument = async (updatedDoc) => {
@@ -96,11 +102,7 @@ const OverviewPage = ({ user }) => {
       )
     );
     
-    handleCloseEditor();
-    // Refetch all data to ensure everything is synced
-    if (fetchDataRef.current) {
-      fetchDataRef.current();
-    }
+    await saveDocument(updatedDoc);
   };
 
   const handleDeleteDocument = async (docId) => {
