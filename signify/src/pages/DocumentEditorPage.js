@@ -11,8 +11,10 @@ const DocumentEditorPage = ({ user }) => {
   useEffect(() => {
     const fetchDocument = async () => {
       try {
+        console.log('Fetching document:', documentId);
         const token = localStorage.getItem('token');
         if (!token) {
+          console.log('No token found');
           navigate('/');
           return;
         }
@@ -21,10 +23,14 @@ const DocumentEditorPage = ({ user }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        console.log('Response status:', response.status);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('Document fetched:', data.data);
           setDocument(data.data);
         } else {
+          console.log('Document not found');
           alert('Document not found');
           navigate('/');
         }

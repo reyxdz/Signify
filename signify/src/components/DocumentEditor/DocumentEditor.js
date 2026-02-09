@@ -9,6 +9,8 @@ import './DocumentEditor.css';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL}/pdf.worker.min.js`;
 
 const DocumentEditor = ({ document, onClose, onSave }) => {
+  console.log('DocumentEditor rendered with document:', document?.name);
+  
   const canvasRef = useRef(null);
   const [signatures, setSignatures] = useState([]);
   const [selectedSignature, setSelectedSignature] = useState(null);
@@ -19,8 +21,11 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
   const [totalPages, setTotalPages] = useState(0);
   const [zoom, setZoom] = useState(125);
 
+  console.log('Current state - zoom:', zoom, 'currentPage:', currentPage, 'totalPages:', totalPages);
+
   // Load and render PDF
   useEffect(() => {
+    console.log('PDF load effect triggered, fileData available:', !!document?.fileData);
     if (!document?.fileData) return;
 
     const loadPDF = async () => {
