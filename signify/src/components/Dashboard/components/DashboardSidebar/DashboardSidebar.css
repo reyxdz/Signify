@@ -1,0 +1,145 @@
+.dashboard-sidebar {
+  width: 260px;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 8px;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.nav-item:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.nav-item.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+  box-shadow: inset 0 0 0 1px #bfdbfe;
+}
+
+.nav-icon {
+  font-size: 18px;
+  min-width: 24px;
+}
+
+.nav-label {
+  flex: 1;
+  text-align: left;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.sidebar-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #6b7280;
+  transition: all 0.2s;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.sidebar-link:hover {
+  background-color: #f9fafb;
+  color: #1f2937;
+}
+
+.sidebar-link span:first-child {
+  font-size: 16px;
+  min-width: 20px;
+}
+
+/* Scrollbar Styling */
+.dashboard-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-sidebar {
+    position: fixed;
+    left: 0;
+    top: 64px;
+    height: calc(100vh - 64px);
+    z-index: 50;
+    transform: translateX(-100%);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .dashboard-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .sidebar-overlay.open {
+    display: block;
+  }
+}

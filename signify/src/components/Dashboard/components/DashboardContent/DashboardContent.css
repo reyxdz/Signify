@@ -1,0 +1,36 @@
+.dashboard-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  background-color: #f8f9fa;
+}
+
+/* Scrollbar Styling */
+.dashboard-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.dashboard-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-content {
+    padding: 16px;
+  }
+}
