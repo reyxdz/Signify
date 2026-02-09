@@ -1,43 +1,77 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Save, Type, X } from 'lucide-react';
+import { ArrowLeft, Save, Type, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
 import FieldsSidebar from './FieldsSidebar';
 import SignatureCanvas from './SignatureCanvas';
 import './DocumentEditor.css';
 
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL}/pdf.worker.min.js`;
+
 const DocumentEditor = ({ document, onClose, onSave }) => {
-  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
   const [signatures, setSignatures] = useState([]);
   const [selectedSignature, setSelectedSignature] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState('view'); // 'view' or 'sign'
-  const [pdfUrl, setPdfUrl] = useState(null);
+  const [pdfDoc, setPdfDoc] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [zoom, setZoom] = useState(100);
 
-  // Create a data URL from fileData
+  // Load and render PDF
   useEffect(() => {
-    if (document?.fileData) {
+    if (!document?.fileData) return;
+
+    const loadPDF = async () => {
       try {
-        // Create a blob from the base64 data
+        // Convert base64 to Uint8Array
         const binaryString = atob(document.fileData);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
-        const blob = new Blob([bytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        setPdfUrl(url);
-        console.log('PDF URL created successfully');
 
-        // Cleanup
-        return () => {
-          if (url) {
-            URL.revokeObjectURL(url);
-          }
-        };
+        // Load PDF
+        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+        setPdfDoc(pdf);
+        setTotalPages(pdf.numPages);
+        setCurrentPage(1);
       } catch (error) {
-        console.error('Error creating PDF URL:', error);
+        console.error('Error loading PDF:', error);
       }
-    }
+    };
+
+    loadPDF();
   }, [document?.fileData]);
+
+  // Render current page
+  useEffect(() => {
+    if (!pdfDoc || !canvasRef.current) return;
+
+    const renderPage = async () => {
+      try {
+        const page = await pdfDoc.getPage(currentPage);
+        const scale = zoom / 100;
+        const viewport = page.getViewport({ scale });
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({
+          canvasContext: ctx,
+          viewport: viewport,
+        }).promise;
+      } catch (error) {
+        console.error('Error rendering page:', error);
+      }
+    };
+
+    renderPage();
+  }, [pdfDoc, currentPage, zoom]);
 
   const handleAddSignature = (sig) => {
     setSignatures([...signatures, { ...sig, id: Date.now() }]);
@@ -126,23 +160,7 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
         {/* Document Canvas Area */}
         <div className="document-area">
           <div className="document-wrapper">
-            {pdfUrl ? (
-              <embed 
-                src={pdfUrl} 
-                type="application/pdf" 
-                className="document-canvas"
-                title="Document PDF"
-              />
-            ) : (
-              <div className="document-placeholder">
-                <div className="placeholder-content">
-                  <h3>{document?.name || 'Document'}</h3>
-                  <p>Status: {document?.status || 'draft'}</p>
-                  <p>Created: {new Date(document?.createdAt).toLocaleDateString()}</p>
-                  <p className="text-muted">Loading document...</p>
-                </div>
-              </div>
-            )}
+            <canvas ref={canvasRef} className="document-canvas" />
             
             {/* Signature Overlay Layer */}
             <div className="signatures-layer">
@@ -185,6 +203,51 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Page Navigation Controls */}
+          <div className="page-controls">
+            <button 
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="page-button"
+              title="Previous page"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            
+            <div className="page-info">
+              <span>Page {currentPage} of {totalPages}</span>
+            </div>
+            
+            <button 
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="page-button"
+              title="Next page"
+            >
+              <ChevronRight size={20} />
+            </button>
+
+            <div className="zoom-controls">
+              <button 
+                onClick={() => setZoom(Math.max(50, zoom - 10))}
+                className="zoom-button"
+                title="Zoom out"
+              >
+                <ZoomOut size={18} />
+              </button>
+              
+              <span className="zoom-display">{zoom}%</span>
+              
+              <button 
+                onClick={() => setZoom(Math.min(200, zoom + 10))}
+                className="zoom-button"
+                title="Zoom in"
+              >
+                <ZoomIn size={18} />
+              </button>
             </div>
           </div>
         </div>
