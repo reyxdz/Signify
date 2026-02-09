@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ArrowLeft, Save, Type, X } from 'lucide-react';
+import FieldsSidebar from './FieldsSidebar';
 import SignatureCanvas from './SignatureCanvas';
 import './DocumentEditor.css';
 
@@ -135,6 +136,9 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
 
       {/* Main Editor Area */}
       <div className="editor-container">
+        {/* Fields Sidebar */}
+        <FieldsSidebar />
+
         {/* Document Canvas Area */}
         <div className="document-area">
           <div className="document-wrapper" style={{ zoom: `${zoom}%` }}>
