@@ -127,6 +127,36 @@
   max-width: 100%;
 }
 
+.document-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  color: var(--text-secondary);
+}
+
+.placeholder-content {
+  text-align: center;
+}
+
+.placeholder-content h3 {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 20px;
+}
+
+.placeholder-content p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.placeholder-content .text-muted {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
 .signatures-layer {
   position: absolute;
   top: 0;

@@ -1,115 +1,44 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ArrowLeft, Save, Type, X } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
 import FieldsSidebar from './FieldsSidebar';
 import SignatureCanvas from './SignatureCanvas';
 import './DocumentEditor.css';
 
-// Set up PDF.js worker - use the worker file from node_modules
-pdfjsLib.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL}/pdf.worker.min.js`;
-
 const DocumentEditor = ({ document, onClose, onSave }) => {
-  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const [signatures, setSignatures] = useState([]);
   const [selectedSignature, setSelectedSignature] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState('view'); // 'view' or 'sign'
   const [zoom, setZoom] = useState(100);
-  const [pdfDoc, setPdfDoc] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [pdfUrl, setPdfUrl] = useState(null);
 
-  // Load document image/PDF
+  // Create a data URL from fileData
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !document) return;
-
-    console.log('Document loaded:', document.name, 'Has fileData:', !!document.fileData, 'FileData length:', document.fileData?.length);
-
-    const loadDocument = async () => {
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // If document has fileData, try to render it as PDF
-      if (document.fileData) {
-        try {
-          console.log('Attempting to load PDF from fileData...');
-          // fileData comes from backend as base64 string, convert to Uint8Array
-          const binaryString = atob(document.fileData);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-
-          console.log('Converted to bytes, length:', bytes.length);
-
-          // Load PDF using PDF.js
-          const pdfData = await pdfjsLib.getDocument({ data: bytes }).promise;
-          setPdfDoc(pdfData);
-          console.log('PDF loaded successfully, pages:', pdfData.numPages);
-
-          // Render first page
-          const page = await pdfData.getPage(currentPage);
-          const viewport = page.getViewport({ scale: zoom / 100 });
-
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-
-          const renderContext = {
-            canvasContext: ctx,
-            viewport: viewport,
-          };
-
-          await page.render(renderContext).promise;
-          console.log('PDF page rendered');
-        } catch (error) {
-          console.error('Error loading PDF:', error);
-          // Fall back to placeholder
-          renderPlaceholder(ctx);
+    if (document?.fileData) {
+      try {
+        // Create a blob from the base64 data
+        const binaryString = atob(document.fileData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
         }
-      } else {
-        console.log('No fileData, showing placeholder');
-        // No file data, show placeholder
-        renderPlaceholder(ctx);
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        setPdfUrl(url);
+        console.log('PDF URL created successfully');
+
+        // Cleanup
+        return () => {
+          if (url) {
+            URL.revokeObjectURL(url);
+          }
+        };
+      } catch (error) {
+        console.error('Error creating PDF URL:', error);
       }
-    };
-
-    const renderPlaceholder = (ctx) => {
-      // Set canvas size
-      canvas.width = 800;
-      canvas.height = 1000;
-
-      // Draw white background
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Draw border
-      ctx.strokeStyle = '#e5e7eb';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-      // Draw placeholder document content
-      ctx.fillStyle = '#1f2937';
-      ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
-      ctx.fillText(document?.name || 'Document', 40, 60);
-
-      ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
-      ctx.fillStyle = '#6b7280';
-      ctx.fillText(`Status: ${document?.status || 'draft'}`, 40, 100);
-      ctx.fillText(`Created: ${new Date(document?.createdAt).toLocaleDateString()}`, 40, 130);
-
-      // Draw placeholder content lines
-      ctx.strokeStyle = '#f0f0f0';
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 20; i++) {
-        ctx.beginPath();
-        ctx.moveTo(40, 160 + i * 30);
-        ctx.lineTo(760, 160 + i * 30);
-        ctx.stroke();
-      }
-    };
-
-    loadDocument();
-  }, [document, zoom, currentPage]);
+    }
+  }, [document?.fileData]);
 
   const handleAddSignature = (sig) => {
     setSignatures([...signatures, { ...sig, id: Date.now() }]);
@@ -198,7 +127,23 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
         {/* Document Canvas Area */}
         <div className="document-area">
           <div className="document-wrapper" style={{ zoom: `${zoom}%` }}>
-            <canvas ref={canvasRef} className="document-canvas" />
+            {pdfUrl ? (
+              <embed 
+                src={pdfUrl} 
+                type="application/pdf" 
+                className="document-canvas"
+                title="Document PDF"
+              />
+            ) : (
+              <div className="document-placeholder">
+                <div className="placeholder-content">
+                  <h3>{document?.name || 'Document'}</h3>
+                  <p>Status: {document?.status || 'draft'}</p>
+                  <p>Created: {new Date(document?.createdAt).toLocaleDateString()}</p>
+                  <p className="text-muted">Loading document...</p>
+                </div>
+              </div>
+            )}
             
             {/* Signature Overlay Layer */}
             <div className="signatures-layer">
