@@ -53,10 +53,6 @@ const OverviewPage = ({ user }) => {
   };
 
   // Document editor state management
-  const {
-    saveDocument,
-  } = useDocumentEditor(fetchAllData);
-
   // Store fetchAllData in ref so it can be called from handleUploadDocument
   useEffect(() => {
     fetchDataRef.current = fetchAllData;
