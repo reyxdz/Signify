@@ -23,6 +23,8 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
     const canvas = canvasRef.current;
     if (!canvas || !document) return;
 
+    console.log('Document loaded:', document.name, 'Has fileData:', !!document.fileData, 'FileData length:', document.fileData?.length);
+
     const loadDocument = async () => {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
@@ -30,6 +32,7 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
       // If document has fileData, try to render it as PDF
       if (document.fileData) {
         try {
+          console.log('Attempting to load PDF from fileData...');
           // fileData comes from backend as base64 string, convert to Uint8Array
           const binaryString = atob(document.fileData);
           const bytes = new Uint8Array(binaryString.length);
@@ -37,9 +40,12 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
             bytes[i] = binaryString.charCodeAt(i);
           }
 
+          console.log('Converted to bytes, length:', bytes.length);
+
           // Load PDF using PDF.js
           const pdfData = await pdfjsLib.getDocument({ data: bytes }).promise;
           setPdfDoc(pdfData);
+          console.log('PDF loaded successfully, pages:', pdfData.numPages);
 
           // Render first page
           const page = await pdfData.getPage(currentPage);
@@ -54,12 +60,14 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
           };
 
           await page.render(renderContext).promise;
+          console.log('PDF page rendered');
         } catch (error) {
           console.error('Error loading PDF:', error);
           // Fall back to placeholder
           renderPlaceholder(ctx);
         }
       } else {
+        console.log('No fileData, showing placeholder');
         // No file data, show placeholder
         renderPlaceholder(ctx);
       }

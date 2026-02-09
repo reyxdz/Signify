@@ -106,7 +106,7 @@ const DocumentSchema = new mongoose.Schema({
         type: Number,
     },
     fileData: {
-        type: Buffer,
+        type: String,
         default: null,
     },
     status: {
@@ -431,19 +431,13 @@ app.post("/api/documents/upload", verifyToken, async (req, resp) => {
             return resp.status(400).send({ message: "Document name and fileName are required" });
         }
 
-        // Convert base64 fileData to Buffer if provided
-        let fileBuffer = null;
-        if (fileData) {
-            fileBuffer = Buffer.from(fileData, 'base64');
-        }
-
         const document = new Document({
             userId,
             name,
             fileName,
             fileType: fileType || 'pdf',
             size: size || 0,
-            fileData: fileBuffer,
+            fileData: fileData || null,
             status: 'draft',
         });
 
