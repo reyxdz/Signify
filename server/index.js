@@ -106,7 +106,7 @@ const DocumentSchema = new mongoose.Schema({
         type: Number,
     },
     fileData: {
-        type: String,
+        type: mongoose.Schema.Types.Binary,
         default: null,
     },
     status: {
@@ -431,13 +431,20 @@ app.post("/api/documents/upload", verifyToken, async (req, resp) => {
             return resp.status(400).send({ message: "Document name and fileName are required" });
         }
 
+        // Convert base64 to Buffer if fileData is provided
+        let binaryData = null;
+        if (fileData) {
+            const buffer = Buffer.from(fileData, 'base64');
+            binaryData = new mongoose.Types.Binary(buffer);
+        }
+
         const document = new Document({
             userId,
             name,
             fileName,
             fileType: fileType || 'pdf',
             size: size || 0,
-            fileData: fileData || null,
+            fileData: binaryData,
             status: 'draft',
         });
 
@@ -627,9 +634,15 @@ app.get("/api/documents/:documentId", verifyToken, async (req, resp) => {
             return resp.status(403).send({ message: "Unauthorized to access this document" });
         }
 
+        // Convert Binary fileData to base64 for JSON transmission
+        const documentObj = document.toObject();
+        if (documentObj.fileData && Buffer.isBuffer(documentObj.fileData)) {
+            documentObj.fileData = documentObj.fileData.toString('base64');
+        }
+
         resp.status(200).send({
             message: "Document retrieved successfully",
-            data: document,
+            data: documentObj,
         });
     } catch (error) {
         console.error("Error fetching document:", error);
