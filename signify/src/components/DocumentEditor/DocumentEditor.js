@@ -49,24 +49,31 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
   useEffect(() => {
     if (!pdfDoc || !canvasRef.current) return;
 
+    console.log('Rendering page:', currentPage, 'at zoom:', zoom);
+
     const renderPage = async () => {
       try {
         const page = await pdfDoc.getPage(currentPage);
         // Base scale: 1.33 for 96 DPI screen display (actual size), then apply zoom
         const baseScale = 1.33; 
         const scale = (baseScale * zoom) / 100;
+        console.log('Scale calculation:', 'baseScale=', baseScale, 'zoom=', zoom, 'final scale=', scale);
+        
         const viewport = page.getViewport({ scale });
 
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
 
+        console.log('Canvas size before:', canvas.width, 'x', canvas.height);
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+        console.log('Canvas size after:', canvas.width, 'x', canvas.height);
 
         await page.render({
           canvasContext: ctx,
           viewport: viewport,
         }).promise;
+        console.log('Page rendered successfully');
       } catch (error) {
         console.error('Error rendering page:', error);
       }
@@ -234,7 +241,11 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
 
             <div className="zoom-controls">
               <button 
-                onClick={() => setZoom(Math.max(50, zoom - 10))}
+                onClick={() => {
+                  const newZoom = Math.max(50, zoom - 10);
+                  console.log('Zoom out clicked, current zoom:', zoom, 'new zoom:', newZoom);
+                  setZoom(newZoom);
+                }}
                 className="zoom-button"
                 title="Zoom out"
               >
@@ -244,7 +255,11 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
               <span className="zoom-display">{zoom}%</span>
               
               <button 
-                onClick={() => setZoom(Math.min(200, zoom + 10))}
+                onClick={() => {
+                  const newZoom = Math.min(200, zoom + 10);
+                  console.log('Zoom in clicked, current zoom:', zoom, 'new zoom:', newZoom);
+                  setZoom(newZoom);
+                }}
                 className="zoom-button"
                 title="Zoom in"
               >
