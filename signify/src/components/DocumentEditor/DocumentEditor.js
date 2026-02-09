@@ -10,7 +10,6 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
   const [selectedSignature, setSelectedSignature] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState('view'); // 'view' or 'sign'
-  const [zoom, setZoom] = useState(100);
   const [pdfUrl, setPdfUrl] = useState(null);
 
   // Create a data URL from fileData
@@ -126,13 +125,14 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
 
         {/* Document Canvas Area */}
         <div className="document-area">
-          <div className="document-wrapper" style={{ zoom: `${zoom}%` }}>
+          <div className="document-wrapper">
             {pdfUrl ? (
               <embed 
                 src={pdfUrl} 
                 type="application/pdf" 
                 className="document-canvas"
                 title="Document PDF"
+              />
               />
             ) : (
               <div className="document-placeholder">
@@ -187,29 +187,6 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Zoom Controls */}
-          <div className="zoom-controls">
-            <button 
-              onClick={() => setZoom(Math.max(50, zoom - 10))}
-              title="Zoom out"
-            >
-              −
-            </button>
-            <span className="zoom-display">{zoom}%</span>
-            <button 
-              onClick={() => setZoom(Math.min(150, zoom + 10))}
-              title="Zoom in"
-            >
-              +
-            </button>
-            <button 
-              onClick={() => setZoom(100)}
-              title="Reset zoom"
-            >
-              Reset
-            </button>
           </div>
         </div>
 
