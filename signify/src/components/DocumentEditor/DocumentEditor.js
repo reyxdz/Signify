@@ -133,7 +133,6 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
                 className="document-canvas"
                 title="Document PDF"
               />
-              />
             ) : (
               <div className="document-placeholder">
                 <div className="placeholder-content">
