@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Save, Type } from 'lucide-react';
+import { ArrowLeft, Save, Type, X } from 'lucide-react';
 import SignatureCanvas from './SignatureCanvas';
 import './DocumentEditor.css';
 
