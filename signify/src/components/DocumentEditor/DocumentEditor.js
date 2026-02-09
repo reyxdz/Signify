@@ -67,16 +67,41 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
   const handleSaveDocument = async () => {
     setIsSaving(true);
     try {
-      // Call parent onSave with signatures data
-      if (onSave) {
-        await onSave({
-          documentId: document._id,
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in first');
+        setIsSaving(false);
+        return;
+      }
+
+      // Call the sign endpoint with signatures
+      const response = await fetch(`http://localhost:5000/api/documents/${document._id}/sign`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           signatures: signatures,
-          status: 'signed'
-        });
+        }),
+      });
+
+      if (response.ok) {
+        alert('Document signed successfully!');
+        if (onSave) {
+          await onSave({
+            documentId: document._id,
+            signatures: signatures,
+            status: 'signed'
+          });
+        }
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message}`);
       }
     } catch (error) {
       console.error('Error saving document:', error);
+      alert('Error saving document. Please try again.');
     } finally {
       setIsSaving(false);
     }

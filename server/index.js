@@ -110,10 +110,6 @@ const DocumentSchema = new mongoose.Schema({
         enum: ['pending', 'signed', 'rejected', 'draft'],
         default: 'draft',
     },
-    description: {
-        type: String,
-        default: '',
-    },
     uploadedAt: {
         type: Date,
         default: Date.now,
@@ -554,27 +550,26 @@ app.patch("/api/documents/:documentId/status", verifyToken, async (req, resp) =>
     }
 });
 
-// Update document metadata
-app.patch("/api/documents/:documentId/update", verifyToken, async (req, resp) => {
+// ==================== END OVERVIEW API ENDPOINTS ====================
+
+// Sign document with signature placement
+app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
     try {
         const userId = req.userId;
         const { documentId } = req.params;
-        const { name, status, description } = req.body;
+        const { signatures } = req.body;
 
-        if (!name || !name.trim()) {
-            return resp.status(400).send({ message: "Document name is required" });
+        if (!signatures || signatures.length === 0) {
+            return resp.status(400).send({ message: "At least one signature is required" });
         }
 
-        const updateData = {
-            name: name.trim(),
-            status: status || 'draft',
-            description: description || '',
-            modifiedAt: new Date(),
-        };
-
+        // Update document status to signed
         const updatedDoc = await Document.findByIdAndUpdate(
             documentId,
-            updateData,
+            { 
+                status: 'signed',
+                modifiedAt: new Date(),
+            },
             { new: true }
         );
 
@@ -582,28 +577,105 @@ app.patch("/api/documents/:documentId/update", verifyToken, async (req, resp) =>
             return resp.status(404).send({ message: "Document not found" });
         }
 
-        // Create activity log entry
+        // Verify document belongs to user
+        if (updatedDoc.userId.toString() !== userId.toString()) {
+            return resp.status(403).send({ message: "Unauthorized to sign this document" });
+        }
+
+        // Create activity log
         const activity = new Activity({
             userId,
-            type: 'document_uploaded',
-            title: `Document updated: ${name}`,
-            details: `Status changed to ${status}`,
+            type: 'document_signed',
+            title: 'Document signed successfully',
+            description: `Signed document: ${updatedDoc.name}`,
+            details: `${signatures.length} signature(s) added`,
             relatedDocumentId: documentId,
         });
 
         await activity.save();
 
+        console.log("Document signed:", documentId, "User:", userId);
         resp.status(200).send({
-            message: "Document updated successfully",
+            message: "Document signed successfully",
             data: updatedDoc,
         });
     } catch (error) {
-        console.error("Error updating document:", error);
-        resp.status(500).send({ message: "Error updating document", error: error.message });
+        console.error("Error signing document:", error);
+        resp.status(500).send({ message: "Error signing document", error: error.message });
     }
 });
 
+// Get document details
+app.get("/api/documents/:documentId", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId } = req.params;
 
+        const document = await Document.findById(documentId);
+        
+        if (!document) {
+            return resp.status(404).send({ message: "Document not found" });
+        }
+
+        // Verify document belongs to user or is shared with user
+        if (document.userId.toString() !== userId.toString() && !document.sharedWith.includes(userId)) {
+            return resp.status(403).send({ message: "Unauthorized to access this document" });
+        }
+
+        resp.status(200).send({
+            message: "Document retrieved successfully",
+            data: document,
+        });
+    } catch (error) {
+        console.error("Error fetching document:", error);
+        resp.status(500).send({ message: "Error fetching document", error: error.message });
+    }
+});
+
+// Delete document
+app.delete("/api/documents/:documentId", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId } = req.params;
+
+        const document = await Document.findById(documentId);
+        
+        if (!document) {
+            return resp.status(404).send({ message: "Document not found" });
+        }
+
+        // Verify document belongs to user
+        if (document.userId.toString() !== userId.toString()) {
+            return resp.status(403).send({ message: "Unauthorized to delete this document" });
+        }
+
+        await Document.findByIdAndDelete(documentId);
+
+        // Create activity log
+        const activity = new Activity({
+            userId,
+            type: 'document_uploaded',
+            title: 'Document deleted',
+            description: `Deleted document: ${document.name}`,
+            details: 'Document permanently removed',
+            relatedDocumentId: documentId,
+        });
+
+        await activity.save();
+
+        console.log("Document deleted:", documentId, "User:", userId);
+        resp.status(200).send({
+            message: "Document deleted successfully",
+        });
+    } catch (error) {
+        console.error("Error deleting document:", error);
+        resp.status(500).send({ message: "Error deleting document", error: error.message });
+    }
+});
+
+// ==================== END DOCUMENT ENDPOINTS ====================
+
+// Start the server
 app.listen(5000, () => {
     console.log("Signify Server is running on port 5000");
 });

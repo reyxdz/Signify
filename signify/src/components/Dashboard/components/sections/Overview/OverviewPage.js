@@ -93,25 +93,11 @@ const OverviewPage = ({ user }) => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/documents/${data.documentId}/status`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: data.status }),
-      });
-
-      if (response.ok) {
-        alert('Document saved successfully!');
-        handleCloseEditor();
-        // Refetch the overview data
-        if (fetchDataRef.current) {
-          fetchDataRef.current();
-        }
-      } else {
-        const result = await response.json();
-        alert(`Save failed: ${result.message}`);
+      // The endpoint was already called in DocumentEditor, just refresh data
+      handleCloseEditor();
+      // Refetch the overview data
+      if (fetchDataRef.current) {
+        fetchDataRef.current();
       }
     } catch (error) {
       console.error('Save error:', error);
