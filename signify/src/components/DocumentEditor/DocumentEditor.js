@@ -52,7 +52,9 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
     const renderPage = async () => {
       try {
         const page = await pdfDoc.getPage(currentPage);
-        const scale = zoom / 100;
+        // Base scale: 1.33 for 96 DPI screen display (actual size), then apply zoom
+        const baseScale = 1.33; 
+        const scale = (baseScale * zoom) / 100;
         const viewport = page.getViewport({ scale });
 
         const canvas = canvasRef.current;
