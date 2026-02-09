@@ -105,6 +105,10 @@ const DocumentSchema = new mongoose.Schema({
     size: {
         type: Number,
     },
+    fileData: {
+        type: Buffer,
+        default: null,
+    },
     status: {
         type: String,
         enum: ['pending', 'signed', 'rejected', 'draft'],
@@ -421,10 +425,16 @@ app.get("/api/activity", verifyToken, async (req, resp) => {
 app.post("/api/documents/upload", verifyToken, async (req, resp) => {
     try {
         const userId = req.userId;
-        const { name, fileName, fileType, size } = req.body;
+        const { name, fileName, fileType, size, fileData } = req.body;
 
         if (!name || !fileName) {
             return resp.status(400).send({ message: "Document name and fileName are required" });
+        }
+
+        // Convert base64 fileData to Buffer if provided
+        let fileBuffer = null;
+        if (fileData) {
+            fileBuffer = Buffer.from(fileData, 'base64');
         }
 
         const document = new Document({
@@ -433,6 +443,7 @@ app.post("/api/documents/upload", verifyToken, async (req, resp) => {
             fileName,
             fileType: fileType || 'pdf',
             size: size || 0,
+            fileData: fileBuffer,
             status: 'draft',
         });
 

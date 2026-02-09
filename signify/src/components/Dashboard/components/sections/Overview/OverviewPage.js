@@ -145,33 +145,44 @@ const OverviewPage = ({ user }) => {
           return;
         }
 
-        const payload = {
-          name: file.name,
-          fileName: file.name,
-          fileType: file.type || 'application/octet-stream',
-          size: file.size,
-        };
+        // Read file as base64
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const fileData = e.target.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
 
-        const response = await fetch('http://localhost:5000/api/documents/upload', {
-          method: 'POST',
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
+          const payload = {
+            name: file.name,
+            fileName: file.name,
+            fileType: file.type || 'application/octet-stream',
+            size: file.size,
+            fileData: fileData, // Add actual file data
+          };
 
-        const result = await response.json();
+          const response = await fetch('http://localhost:5000/api/documents/upload', {
+            method: 'POST',
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
 
-        if (response.ok) {
-          alert('Document uploaded successfully!');
-          // Refetch the overview data instead of reloading the page
-          if (fetchDataRef.current) {
-            fetchDataRef.current();
+          const result = await response.json();
+
+          if (response.ok) {
+            alert('Document uploaded successfully!');
+            // Refetch the overview data instead of reloading the page
+            if (fetchDataRef.current) {
+              fetchDataRef.current();
+            }
+          } else {
+            alert(`Upload failed: ${result.message}`);
           }
-        } else {
-          alert(`Upload failed: ${result.message}`);
-        }
+        };
+        reader.onerror = () => {
+          alert('Error reading file');
+        };
+        reader.readAsDataURL(file);
       } catch (error) {
         console.error('Upload error:', error);
         alert('Error uploading document');

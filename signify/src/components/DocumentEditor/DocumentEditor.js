@@ -1,8 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ArrowLeft, Save, Type, X } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
 import FieldsSidebar from './FieldsSidebar';
 import SignatureCanvas from './SignatureCanvas';
 import './DocumentEditor.css';
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const DocumentEditor = ({ document, onClose, onSave }) => {
   const canvasRef = useRef(null);
@@ -11,49 +15,93 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState('view'); // 'view' or 'sign'
   const [zoom, setZoom] = useState(100);
+  const [pdfDoc, setPdfDoc] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Load document image/PDF
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !document) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const loadDocument = async () => {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    // For now, we'll create a placeholder document view
-    // In production, you would load actual PDF using pdf.js or similar
-    canvas.width = 800;
-    canvas.height = 1000;
+      // If document has fileData, try to render it as PDF
+      if (document.fileData) {
+        try {
+          // fileData comes from backend as base64 string, convert to Uint8Array
+          const binaryString = atob(document.fileData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
 
-    // Draw white background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Load PDF using PDF.js
+          const pdfData = await pdfjsLib.getDocument({ data: bytes }).promise;
+          setPdfDoc(pdfData);
 
-    // Draw border
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+          // Render first page
+          const page = await pdfData.getPage(currentPage);
+          const viewport = page.getViewport({ scale: zoom / 100 });
 
-    // Draw placeholder document content
-    ctx.fillStyle = '#1f2937';
-    ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
-    ctx.fillText(document?.name || 'Document', 40, 60);
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
 
-    ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
-    ctx.fillStyle = '#6b7280';
-    ctx.fillText(`Status: ${document?.status || 'draft'}`, 40, 100);
-    ctx.fillText(`Created: ${new Date(document?.createdAt).toLocaleDateString()}`, 40, 130);
+          const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport,
+          };
 
-    // Draw placeholder content lines
-    ctx.strokeStyle = '#f0f0f0';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 20; i++) {
-      ctx.beginPath();
-      ctx.moveTo(40, 160 + i * 30);
-      ctx.lineTo(760, 160 + i * 30);
-      ctx.stroke();
-    }
-  }, [document, zoom]);
+          await page.render(renderContext).promise;
+        } catch (error) {
+          console.error('Error loading PDF:', error);
+          // Fall back to placeholder
+          renderPlaceholder(ctx);
+        }
+      } else {
+        // No file data, show placeholder
+        renderPlaceholder(ctx);
+      }
+    };
+
+    const renderPlaceholder = (ctx) => {
+      // Set canvas size
+      canvas.width = 800;
+      canvas.height = 1000;
+
+      // Draw white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw border
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+      // Draw placeholder document content
+      ctx.fillStyle = '#1f2937';
+      ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+      ctx.fillText(document?.name || 'Document', 40, 60);
+
+      ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+      ctx.fillStyle = '#6b7280';
+      ctx.fillText(`Status: ${document?.status || 'draft'}`, 40, 100);
+      ctx.fillText(`Created: ${new Date(document?.createdAt).toLocaleDateString()}`, 40, 130);
+
+      // Draw placeholder content lines
+      ctx.strokeStyle = '#f0f0f0';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 20; i++) {
+        ctx.beginPath();
+        ctx.moveTo(40, 160 + i * 30);
+        ctx.lineTo(760, 160 + i * 30);
+        ctx.stroke();
+      }
+    };
+
+    loadDocument();
+  }, [document, zoom, currentPage]);
 
   const handleAddSignature = (sig) => {
     setSignatures([...signatures, { ...sig, id: Date.now() }]);
