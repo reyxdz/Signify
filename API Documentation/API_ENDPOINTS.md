@@ -397,6 +397,52 @@ Status: 200 OK
 
 ---
 
+### 11. Update Document Metadata
+**Endpoint:** `PATCH /api/documents/:documentId/update`
+
+**Description:** Update document metadata including name, status, and description notes.
+
+**Authentication:** Required (Bearer token in Authorization header)
+
+**URL Parameters:**
+- `documentId`: MongoDB ObjectId of the document
+
+**Request Body:**
+```json
+{
+  "name": "string (required)",
+  "status": "draft|pending|signed|rejected (optional)",
+  "description": "string (optional, max 500 chars)"
+}
+```
+
+**Success Response:**
+```
+Status: 200 OK
+{
+  "message": "Document updated successfully",
+  "data": {
+    "_id": "ObjectId",
+    "userId": "ObjectId",
+    "name": "Updated Document Name",
+    "fileName": "string",
+    "status": "pending",
+    "description": "Added notes here",
+    "uploadedAt": "ISO date",
+    "modifiedAt": "ISO date",
+    "createdAt": "ISO date"
+  }
+}
+```
+
+**Error Responses:**
+- **400 Bad Request** - Missing document name
+- **401 Unauthorized** - Invalid or missing token
+- **404 Not Found** - Document not found
+- **500 Internal Server Error**
+
+---
+
 ## Data Models
 
 ### User Schema
@@ -432,6 +478,7 @@ Status: 200 OK
   fileType: String (default: 'pdf'),
   size: Number,
   status: String (enum: ['pending', 'signed', 'rejected', 'draft'], default: 'draft'),
+  description: String (optional, default: ''),
   uploadedAt: Date (default: current timestamp),
   modifiedAt: Date (default: current timestamp),
   createdAt: Date (default: current timestamp),
