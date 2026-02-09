@@ -129,12 +129,7 @@
   box-shadow: var(--shadow-lg);
   border-radius: 8px;
   overflow: hidden;
-  transform-origin: top center;
-  transition: transform 0.2s ease;
-  max-width: 90%;
-  width: auto;
-  height: auto;
-  aspect-ratio: 8.5 / 11;
+  display: inline-block;
 }
 
 .document-canvas {

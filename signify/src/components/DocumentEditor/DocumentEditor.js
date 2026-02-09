@@ -17,7 +17,7 @@ const DocumentEditor = ({ document, onClose, onSave }) => {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(125);
 
   // Load and render PDF
   useEffect(() => {
