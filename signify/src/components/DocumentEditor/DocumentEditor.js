@@ -1,12 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ArrowLeft, Save, Type, X } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min';
 import FieldsSidebar from './FieldsSidebar';
 import SignatureCanvas from './SignatureCanvas';
 import './DocumentEditor.css';
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set up PDF.js worker to use local file
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const DocumentEditor = ({ document, onClose, onSave }) => {
   const canvasRef = useRef(null);
