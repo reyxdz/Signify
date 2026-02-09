@@ -284,10 +284,8 @@ const OverviewPage = ({ user }) => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
 
-      {editingDocument && (
-        <DocumentEditor 
-          document={editingDocument}
-          onClose={handleCloseEditor}
-          onSave={handleSaveDocument}
-        />
+export default OverviewPage;
