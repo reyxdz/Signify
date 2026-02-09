@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FileText, PenTool, Users, CheckCircle, Upload, Layout, Share2, Edit2, Trash2 } from 'lucide-react';
 import DocumentEditorModal from '../../../../Modals/DocumentEditorModal/DocumentEditorModal';
-import useDocumentEditor from './hooks/useDocumentEditor';
 import './OverviewPage.css';
 
 const OverviewPage = ({ user }) => {
@@ -15,15 +14,8 @@ const OverviewPage = ({ user }) => {
   const [recentDocuments, setRecentDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const fetchDataRef = useRef(null);
-
-  // Document editor state management
-  const {
-    showEditorModal,
-    selectedDocument,
-    openEditor,
-    closeEditor,
-    saveDocument,
-  } = useDocumentEditor(fetchAllData);
+  const [showEditorModal, setShowEditorModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState(null);
 
   // Function to fetch all overview data
   const fetchAllData = async () => {
@@ -60,6 +52,11 @@ const OverviewPage = ({ user }) => {
     }
   };
 
+  // Document editor state management
+  const {
+    saveDocument,
+  } = useDocumentEditor(fetchAllData);
+
   // Store fetchAllData in ref so it can be called from handleUploadDocument
   useEffect(() => {
     fetchDataRef.current = fetchAllData;
@@ -87,11 +84,13 @@ const OverviewPage = ({ user }) => {
   };
 
   const handleEditDocument = (doc) => {
-    openEditor(doc);
+    setSelectedDocument(doc);
+    setShowEditorModal(true);
   };
 
   const handleCloseEditor = () => {
-    closeEditor();
+    setShowEditorModal(false);
+    setSelectedDocument(null);
   };
 
   const handleSaveDocument = async (updatedDoc) => {
@@ -102,7 +101,11 @@ const OverviewPage = ({ user }) => {
       )
     );
     
-    await saveDocument(updatedDoc);
+    handleCloseEditor();
+    // Refetch all data to ensure everything is synced
+    if (fetchDataRef.current) {
+      fetchDataRef.current();
+    }
   };
 
   const handleDeleteDocument = async (docId) => {
