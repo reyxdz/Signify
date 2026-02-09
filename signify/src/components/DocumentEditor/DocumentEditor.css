@@ -113,12 +113,18 @@
   overflow: hidden;
   transform-origin: top center;
   transition: transform 0.2s ease;
+  max-width: 90%;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  aspect-ratio: 8.5 / 11;
 }
 
 .document-canvas {
   display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
 }
 
 .signatures-layer {
