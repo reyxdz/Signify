@@ -106,7 +106,7 @@ const DocumentSchema = new mongoose.Schema({
         type: Number,
     },
     fileData: {
-        type: mongoose.Schema.Types.Binary,
+        type: Buffer,
         default: null,
     },
     status: {
@@ -434,8 +434,7 @@ app.post("/api/documents/upload", verifyToken, async (req, resp) => {
         // Convert base64 to Buffer if fileData is provided
         let binaryData = null;
         if (fileData) {
-            const buffer = Buffer.from(fileData, 'base64');
-            binaryData = new mongoose.Types.Binary(buffer);
+            binaryData = Buffer.from(fileData, 'base64');
         }
 
         const document = new Document({
