@@ -1,16 +1,14 @@
 const mongoose = require('mongoose');
 const express = require('express');
 const cors = require("cors");
-const bcrypt = require('bcrypt');
+const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/signify', {
-    // Remove deprecated options - they're handled automatically in newer versions
-}).then(() => {
+mongoose.connect('mongodb://localhost:27017/signify', {}).then(() => {
     console.log('Connected to signify database');
 }).catch((err) => {
     console.log('Error connecting to database', err);
@@ -50,7 +48,7 @@ const User = mongoose.model('users', UserSchema);
 // Express setup
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3000' // React frontend URL
+    origin: 'http://localhost:3000'
 }));
 
 // Sample route to check if the backend is working
@@ -69,8 +67,9 @@ app.post("/register", async (req, resp) => {
             return resp.status(400).send({ message: "Email already registered" });
         }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // Hash password with bcryptjs
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(password, salt);
 
         const user = new User({
             firstName,
@@ -81,7 +80,8 @@ app.post("/register", async (req, resp) => {
         });
 
         let result = await user.save();
-        resp.status(201).send({
+        console.log("User registered:", result.email);
+        resp.status(201).send({ 
             message: "User registered successfully",
             user: {
                 id: result._id,
@@ -91,6 +91,7 @@ app.post("/register", async (req, resp) => {
             }
         });
     } catch (e) {
+        console.error("Registration error:", e);
         resp.status(500).send({ message: "Something went wrong", error: e.message });
     }
 });
@@ -106,10 +107,10 @@ app.post("/login", async (req, resp) => {
             return resp.status(401).send({ message: "Invalid email or password" });
         }
 
-        // Compare passwords
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        // Compare passwords with bcryptjs
+        const isPasswordValid = await bcryptjs.compare(password, user.password);
         if (!isPasswordValid) {
-            return resp.status(401).send({ message: "INvalid email or password" });
+            return resp.status(401).send({ message: "Invalid email or password" });
         }
 
         // Create JWT token
@@ -119,8 +120,9 @@ app.post("/login", async (req, resp) => {
             { expiresIn: '24h' }
         );
 
+        console.log("User logged in:", email);
         resp.status(200).send({
-            message: "Sign in successful",
+            message: "Login successful",
             token,
             user: {
                 id: user._id,
@@ -130,9 +132,10 @@ app.post("/login", async (req, resp) => {
             }
         });
     } catch (e) {
+        console.error("Login error:", e);
         resp.status(500).send({ message: "Something went wrong", error: e.message });
     }
-})
+});
 
 // Start the server
 app.listen(5000, () => {
