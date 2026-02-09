@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FileText, PenTool, Users, CheckCircle, Upload, Layout, Share2, Edit2, Trash2 } from 'lucide-react';
-import DocumentEditorModal from '../../../Modals/DocumentEditorModal/DocumentEditorModal';
+import DocumentEditorModal from '../../../../Modals/DocumentEditorModal/DocumentEditorModal';
 import useDocumentEditor from './hooks/useDocumentEditor';
 import './OverviewPage.css';
 
