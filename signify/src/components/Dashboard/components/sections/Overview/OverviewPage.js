@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FileText, PenTool, Users, CheckCircle, Upload, Layout, Share2, Edit2, Trash2 } from 'lucide-react';
+import DocumentEditorModal from '../../../Modals/DocumentEditorModal/DocumentEditorModal';
 import './OverviewPage.css';
 
 const OverviewPage = ({ user }) => {
@@ -12,6 +13,8 @@ const OverviewPage = ({ user }) => {
 
   const [recentDocuments, setRecentDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showEditorModal, setShowEditorModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState(null);
   const fetchDataRef = useRef(null);
 
   // Function to fetch all overview data
@@ -76,8 +79,28 @@ const OverviewPage = ({ user }) => {
   };
 
   const handleEditDocument = (doc) => {
-    console.log('Edit document:', doc);
-    // TODO: Open edit modal or navigate to edit page
+    setSelectedDocument(doc);
+    setShowEditorModal(true);
+  };
+
+  const handleCloseEditor = () => {
+    setShowEditorModal(false);
+    setSelectedDocument(null);
+  };
+
+  const handleSaveDocument = async (updatedDoc) => {
+    // Update the document in the recent documents list
+    setRecentDocuments((prev) =>
+      prev.map((doc) =>
+        doc._id === updatedDoc._id ? updatedDoc : doc
+      )
+    );
+    
+    handleCloseEditor();
+    // Refetch all data to ensure everything is synced
+    if (fetchDataRef.current) {
+      fetchDataRef.current();
+    }
   };
 
   const handleDeleteDocument = async (docId) => {
@@ -266,6 +289,14 @@ const OverviewPage = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {showEditorModal && selectedDocument && (
+        <DocumentEditorModal
+          document={selectedDocument}
+          onClose={handleCloseEditor}
+          onSave={handleSaveDocument}
+        />
+      )}
     </div>
   );
 };

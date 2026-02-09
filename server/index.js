@@ -110,6 +110,10 @@ const DocumentSchema = new mongoose.Schema({
         enum: ['pending', 'signed', 'rejected', 'draft'],
         default: 'draft',
     },
+    description: {
+        type: String,
+        default: '',
+    },
     uploadedAt: {
         type: Date,
         default: Date.now,
@@ -550,9 +554,56 @@ app.patch("/api/documents/:documentId/status", verifyToken, async (req, resp) =>
     }
 });
 
-// ==================== END OVERVIEW API ENDPOINTS ====================
+// Update document metadata
+app.patch("/api/documents/:documentId/update", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId } = req.params;
+        const { name, status, description } = req.body;
 
-// Start the server
+        if (!name || !name.trim()) {
+            return resp.status(400).send({ message: "Document name is required" });
+        }
+
+        const updateData = {
+            name: name.trim(),
+            status: status || 'draft',
+            description: description || '',
+            modifiedAt: new Date(),
+        };
+
+        const updatedDoc = await Document.findByIdAndUpdate(
+            documentId,
+            updateData,
+            { new: true }
+        );
+
+        if (!updatedDoc) {
+            return resp.status(404).send({ message: "Document not found" });
+        }
+
+        // Create activity log entry
+        const activity = new Activity({
+            userId,
+            type: 'document_uploaded',
+            title: `Document updated: ${name}`,
+            details: `Status changed to ${status}`,
+            relatedDocumentId: documentId,
+        });
+
+        await activity.save();
+
+        resp.status(200).send({
+            message: "Document updated successfully",
+            data: updatedDoc,
+        });
+    } catch (error) {
+        console.error("Error updating document:", error);
+        resp.status(500).send({ message: "Error updating document", error: error.message });
+    }
+});
+
+
 app.listen(5000, () => {
     console.log("Signify Server is running on port 5000");
 });
