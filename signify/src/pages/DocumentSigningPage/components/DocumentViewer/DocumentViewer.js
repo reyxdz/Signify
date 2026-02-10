@@ -31,36 +31,70 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
 
   // Load PDF from documentId or fileData
   useEffect(() => {
-    if (fileData && !document && !pdfUrl) {
-      try {
-        console.log('Processing fileData:', typeof fileData, fileData ? 'exists' : 'null');
-        // If fileData is base64 string, convert to ArrayBuffer
-        if (typeof fileData === 'string') {
-          console.log('Converting base64 to ArrayBuffer');
-          const binaryString = atob(fileData);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+    if (documentId && !document && !pdfUrl) {
+      setLoading(true);
+      const loadPDF = async () => {
+        try {
+          // If we have fileData, use it
+          if (fileData) {
+            console.log('Processing fileData:', typeof fileData);
+            if (typeof fileData === 'string') {
+              console.log('Converting base64 to ArrayBuffer');
+              const binaryString = atob(fileData);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              const buffer = bytes.buffer;
+              console.log('ArrayBuffer created, size:', buffer.byteLength);
+              setPdfUrl(buffer);
+              setCurrentPage(1);
+            } else if (fileData instanceof ArrayBuffer) {
+              console.log('FileData is already ArrayBuffer');
+              setPdfUrl(fileData);
+              setCurrentPage(1);
+            }
+          } else {
+            // Fetch PDF from backend
+            console.log('Fetching PDF from backend for documentId:', documentId);
+            const token = localStorage.getItem('token');
+            
+            // Try to fetch the file content from backend
+            const response = await fetch(`http://localhost:5000/api/documents/${documentId}/file`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!response.ok) {
+              console.log('File endpoint not available, trying download endpoint');
+              // Fallback to download endpoint
+              const downloadResponse = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              
+              if (downloadResponse.ok) {
+                const arrayBuffer = await downloadResponse.arrayBuffer();
+                console.log('PDF fetched from backend, size:', arrayBuffer.byteLength);
+                setPdfUrl(arrayBuffer);
+                setCurrentPage(1);
+              } else {
+                console.error('Failed to fetch PDF:', downloadResponse.status);
+              }
+            } else {
+              const arrayBuffer = await response.arrayBuffer();
+              console.log('PDF fetched from backend, size:', arrayBuffer.byteLength);
+              setPdfUrl(arrayBuffer);
+              setCurrentPage(1);
+            }
           }
-          const buffer = bytes.buffer;
-          console.log('ArrayBuffer created, size:', buffer.byteLength);
-          setPdfUrl(buffer);
-          setCurrentPage(1);
+        } catch (error) {
+          console.error('Error loading PDF:', error);
+        } finally {
           setLoading(false);
-        } else if (fileData instanceof ArrayBuffer) {
-          console.log('FileData is already ArrayBuffer');
-          setPdfUrl(fileData);
-          setCurrentPage(1);
-          setLoading(false);
-        } else {
-          console.log('FileData is:', fileData.constructor.name);
         }
-      } catch (error) {
-        console.error('Error processing file data:', error);
-        setLoading(false);
-      }
+      };
+      loadPDF();
     }
-  }, [fileData, document]);
+  }, [documentId, document, fileData]);
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
