@@ -166,6 +166,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
             tool: tool,
             x: x,
             y: y,
+            page: currentPage,
           },
         ]);
       }
@@ -235,7 +236,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                   <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} loading={<div>Loading PDF...</div>}>
                     <Page pageNumber={currentPage} scale={1.5} />
                   </Document>
-                  {droppedTools.map((item) => (
+                  {droppedTools.filter((item) => item.page === currentPage).map((item) => (
                     <div
                       key={item.id}
                       className="dropped-tool"
