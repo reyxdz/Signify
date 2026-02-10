@@ -122,10 +122,14 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     
     // Show preview of where tool will be dropped
     const wrapper = wrapperRef.current;
+    const canvas = event.currentTarget;
     if (wrapper) {
       const wrapperRect = wrapper.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+      
+      // Calculate position relative to wrapper, accounting for canvas scroll and positioning
       const x = event.clientX - wrapperRect.left;
-      const y = event.clientY - wrapperRect.top + event.currentTarget.scrollTop;
+      const y = event.clientY - canvasRect.top - (wrapperRect.top - canvasRect.top) + canvas.scrollTop;
       
       setDragPreview({ x, y });
     }
@@ -148,9 +152,9 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     const scrollTop = event.currentTarget.scrollTop;
     const scrollLeft = event.currentTarget.scrollLeft;
     
-    // Calculate position relative to wrapper
+    // Calculate position relative to wrapper, accounting for canvas scroll and positioning
     const x = event.clientX - wrapperRect.left;
-    const y = event.clientY - wrapperRect.top + scrollTop;
+    const y = event.clientY - canvasRect.top - (wrapperRect.top - canvasRect.top) + scrollTop;
     
     // Check if it's a tool being dragged from dropped tools
     if (draggedToolId) {
