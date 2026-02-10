@@ -22,4 +22,4 @@ const DocumentEditorPage = ({ user }) => {
   );
 };
 
-export default DocumentEditorPage;"
+export default DocumentEditorPage;
