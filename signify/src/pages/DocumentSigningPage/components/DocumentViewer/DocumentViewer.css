@@ -91,25 +91,28 @@
 /* Document Canvas */
 .document-canvas {
   flex: 1;
-  background-color: #e5e7eb;
+  background-color: #f3f4f6;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 100px 20px 20px 20px;
+  padding: 20px;
+  gap: 20px;
 }
 
 /* PDF Viewer Wrapper */
 .pdf-viewer-wrapper {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: #e5e7eb;
+  height: auto;
+  overflow: visible;
+  background-color: transparent;
+  gap: 20px;
 }
 
 .pdf-viewer-wrapper > div {
@@ -249,15 +252,21 @@
 /* React PDF Styles */
 .react-pdf__Document {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
-  height: 100%;
+  height: auto;
+  gap: 20px;
 }
 
 .react-pdf__Page {
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  height: auto;
 }
