@@ -130,8 +130,10 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     // Check if it's a tool being dragged from dropped tools
     if (draggedToolId) {
       const rect = event.currentTarget.getBoundingClientRect();
-      const x = event.clientX - rect.left - dragOffset.x;
-      const y = event.clientY - rect.top - dragOffset.y;
+      const scrollTop = event.currentTarget.scrollTop;
+      const scrollLeft = event.currentTarget.scrollLeft;
+      const x = event.clientX - rect.left + scrollLeft;
+      const y = event.clientY - rect.top + scrollTop;
       
       setDroppedTools(
         droppedTools.map((tool) =>
@@ -156,8 +158,10 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       if (toolData) {
         const tool = JSON.parse(toolData);
         const rect = event.currentTarget.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+        const scrollTop = event.currentTarget.scrollTop;
+        const scrollLeft = event.currentTarget.scrollLeft;
+        const x = event.clientX - rect.left + scrollLeft;
+        const y = event.clientY - rect.top + scrollTop;
         
         setDroppedTools([
           ...droppedTools,

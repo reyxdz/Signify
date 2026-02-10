@@ -114,6 +114,7 @@
   background-color: transparent;
   gap: 20px;
   position: relative;
+  pointer-events: auto;
 }
 
 .pdf-viewer-wrapper > div {
