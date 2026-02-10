@@ -16,6 +16,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [droppedTools, setDroppedTools] = useState([]);
   const [draggedToolId, setDraggedToolId] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragPreview, setDragPreview] = useState(null);
 
   // Load PDF from file upload
   useEffect(() => {
@@ -118,17 +119,27 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const handleDragOver = (event) => {
     event.preventDefault();
     event.currentTarget.classList.add('drag-over');
+    
+    // Show preview of where tool will be dropped
+    const wrapper = wrapperRef.current;
+    if (wrapper) {
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const x = event.clientX - wrapperRect.left;
+      const y = event.clientY - wrapperRect.top + event.currentTarget.scrollTop;
+      
+      setDragPreview({ x, y });
+    }
   };
 
   const handleDragLeave = (event) => {
     event.currentTarget.classList.remove('drag-over');
+    setDragPreview(null);
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
-    
-    // Get the wrapper element to calculate relative position
+    setDragPreview(null);
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
     
@@ -242,6 +253,18 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                   <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} loading={<div>Loading PDF...</div>}>
                     <Page pageNumber={currentPage} scale={1.5} />
                   </Document>
+                  {dragPreview && (
+                    <div
+                      className="drag-preview"
+                      style={{
+                        position: 'absolute',
+                        left: `${dragPreview.x}px`,
+                        top: `${dragPreview.y}px`,
+                      }}
+                    >
+                      <div className="drag-preview-label">Drop here</div>
+                    </div>
+                  )}
                   {droppedTools.map((item) => (
                     <div
                       key={item.id}
