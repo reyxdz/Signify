@@ -8,7 +8,6 @@ const DrawSignature = ({ user, onComplete, onNext, onBack }) => {
   const [isEmpty, setIsEmpty] = useState(true);
   const [step, setStep] = useState('signature'); // 'signature' or 'initials'
   const [signatureImage, setSignatureImage] = useState(null);
-  const [initialsImage, setInitialsImage] = useState(null);
 
   const getCanvasCoordinates = (e) => {
     const canvas = canvasRef.current;
@@ -81,7 +80,6 @@ const DrawSignature = ({ user, onComplete, onNext, onBack }) => {
       }
     } else if (step === 'initials' && !isEmpty) {
       const canvas = canvasRef.current;
-      setInitialsImage(canvas.toDataURL());
       
       // Complete with both images
       onComplete({

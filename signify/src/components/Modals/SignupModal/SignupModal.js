@@ -46,7 +46,7 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
 
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/register', {
+      await axios.post('http://localhost:5000/register', {
         firstName: formData.firstName,
         lastName: formData.lastName,
         address: formData.address,

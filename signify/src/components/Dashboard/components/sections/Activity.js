@@ -3,17 +3,6 @@ import { Check, Upload, Share2, PenTool, Eye, Download } from 'lucide-react';
 import '../Sections.css';
 
 const Activity = () => {
-  const getActivityIcon = (icon) => {
-    const iconMap = {
-      '✓': Check,
-      '⬆️': Upload,
-      '👥': Share2,
-      '✍️': PenTool,
-      '👁️': Eye,
-      '⬇️': Download,
-    };
-    return iconMap[icon];
-  };
 
   const activities = [
     { id: 1, action: 'Document signed', document: 'Contract_2026.pdf', time: '2 hours ago', icon: Check },

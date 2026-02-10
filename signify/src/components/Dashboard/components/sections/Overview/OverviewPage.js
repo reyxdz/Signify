@@ -81,22 +81,7 @@ const OverviewPage = ({ user }) => {
     navigate(`/document/${doc._id || doc.id}`);
   };
 
-  const handleCloseEditor = () => {
-    // No longer needed since we're using page navigation
-  };
 
-  const handleSaveDocument = async (data) => {
-    try {
-      // The endpoint was already called in DocumentEditor, just refresh data
-      // Refetch the overview data
-      if (fetchDataRef.current) {
-        fetchDataRef.current();
-      }
-    } catch (error) {
-      console.error('Save error:', error);
-      alert('Error saving document');
-    }
-  };
 
   const handleDeleteDocument = async (docId) => {
     if (!window.confirm('Are you sure you want to delete this document?')) {

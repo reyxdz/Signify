@@ -279,8 +279,6 @@
 }
 
 /* Documents Section */
-.section-documents {
-}
 
 .documents-table {
   background: white;
@@ -394,8 +392,6 @@
 }
 
 /* Templates Section */
-.section-templates {
-}
 
 .templates-grid {
   display: grid;
@@ -463,8 +459,6 @@
 }
 
 /* Signatures Section */
-.section-signatures {
-}
 
 .signature-intro {
   background: #ede9fe;
@@ -540,12 +534,8 @@
 }
 
 /* Shared Section */
-.section-shared {
-}
 
 /* Activity Section */
-.section-activity {
-}
 
 .activity-timeline {
   background: white;

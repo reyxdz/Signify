@@ -55,7 +55,8 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  min-height: 360px;\n}
+  min-height: 360px;
+}
 
 .empty-state {
   text-align: center;
