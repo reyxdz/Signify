@@ -168,6 +168,11 @@
   font-weight: 500;
 }
 
+.document-id {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .upload-area {

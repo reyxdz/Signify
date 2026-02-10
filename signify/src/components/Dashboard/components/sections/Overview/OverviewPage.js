@@ -84,7 +84,8 @@ const OverviewPage = ({ user }) => {
       return;
     }
 
-    navigate(`/document/${id}`);
+    // Navigate to the signing page with document data
+    navigate('/sign', { state: { document: doc, documentId: id } });
   };
 
 

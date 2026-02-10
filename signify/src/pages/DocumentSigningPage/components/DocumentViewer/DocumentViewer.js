@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Upload } from 'lucide-react';
 import './DocumentViewer.css';
 
-function DocumentViewer({ document, documentName, onDocumentUpload }) {
+function DocumentViewer({ document, documentName, documentId, onDocumentUpload }) {
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (event) => {
@@ -34,9 +34,12 @@ function DocumentViewer({ document, documentName, onDocumentUpload }) {
     }
   };
 
+  // Show document if either a file is uploaded or documentId exists
+  const hasDocument = document || documentId;
+
   return (
     <div className="document-viewer">
-      {!document ? (
+      {!hasDocument ? (
         <div className="upload-area" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
           <div className="upload-content">
             <div className="upload-icon">
@@ -83,6 +86,7 @@ function DocumentViewer({ document, documentName, onDocumentUpload }) {
             <div className="pdf-placeholder">
               <p>PDF Viewer Coming Soon</p>
               <p className="file-info">File: {documentName}</p>
+              {documentId && <p className="document-id">ID: {documentId}</p>}
             </div>
           </div>
         </div>
