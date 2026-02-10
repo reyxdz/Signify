@@ -12,10 +12,6 @@ import Dashboard from './components/Dashboard/Dashboard';
 import DocumentSigningPage from './pages/DocumentSigningPage/DocumentSigningPage';
 import './App.css';
 
-// Set up PDF worker globally
-import * as pdfjsLib from 'pdfjs-dist';
-pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
-
 function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
