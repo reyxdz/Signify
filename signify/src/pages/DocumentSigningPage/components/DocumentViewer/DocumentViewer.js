@@ -33,27 +33,34 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   useEffect(() => {
     if (fileData && !document && !pdfUrl) {
       try {
+        console.log('Processing fileData:', typeof fileData, fileData ? 'exists' : 'null');
         // If fileData is base64 string, convert to ArrayBuffer
         if (typeof fileData === 'string') {
+          console.log('Converting base64 to ArrayBuffer');
           const binaryString = atob(fileData);
           const bytes = new Uint8Array(binaryString.length);
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
           }
-          setPdfUrl(bytes.buffer);
+          const buffer = bytes.buffer;
+          console.log('ArrayBuffer created, size:', buffer.byteLength);
+          setPdfUrl(buffer);
           setCurrentPage(1);
           setLoading(false);
         } else if (fileData instanceof ArrayBuffer) {
+          console.log('FileData is already ArrayBuffer');
           setPdfUrl(fileData);
           setCurrentPage(1);
           setLoading(false);
+        } else {
+          console.log('FileData is:', fileData.constructor.name);
         }
       } catch (error) {
         console.error('Error processing file data:', error);
         setLoading(false);
       }
     }
-  }, [fileData, document, pdfUrl]);
+  }, [fileData, document]);
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];

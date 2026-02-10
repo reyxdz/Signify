@@ -18,6 +18,7 @@ function DocumentSigningPage() {
     if (location.state?.document) {
       const doc = location.state.document;
       const id = location.state.documentId || doc._id || doc.id;
+      console.log('Document received from dashboard:', { name: doc.name, hasFileData: !!doc.fileData });
       setDocumentId(id);
       setDocumentName(doc.name || doc.fileName || '');
       setFileData(doc.fileData || null);
