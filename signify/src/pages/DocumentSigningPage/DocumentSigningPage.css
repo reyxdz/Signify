@@ -70,7 +70,7 @@
   width: 280px;
   background-color: #f9fafb;
   border-right: 1px solid #e5e7eb;
-  overflow-y: auto;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
@@ -88,7 +88,7 @@
   width: 280px;
   background-color: #f9fafb;
   border-left: 1px solid #e5e7eb;
-  overflow-y: auto;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
