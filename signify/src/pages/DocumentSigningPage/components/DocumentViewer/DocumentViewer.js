@@ -8,11 +8,11 @@ import './DocumentViewer.css';
 // Set up PDF worker - use local worker file
 import { pdfjs } from 'react-pdf';
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
+  'pdfjs-dist/build/pdf.worker.min.js',
   import.meta.url,
 ).toString();
 
-function DocumentViewer({ document, documentName, documentId, onDocumentUpload }) {
+function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload }) {
   const fileInputRef = useRef(null);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,45 +31,31 @@ function DocumentViewer({ document, documentName, documentId, onDocumentUpload }
     }
   }, [document]);
 
-  // Load PDF from documentId
+  // Load PDF from documentId or fileData
   useEffect(() => {
-    if (documentId && !document && !pdfUrl) {
-      const loadDocumentFromServer = async () => {
-        setLoading(true);
-        try {
-          const token = localStorage.getItem('token');
-          console.log('Loading document:', documentId);
-          
-          // Try the download endpoint first
-          let response = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          // If download endpoint fails, try the documents endpoint
-          if (!response.ok) {
-            console.log('Download endpoint failed, trying documents endpoint');
-            response = await fetch(`http://localhost:5000/api/documents/${documentId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+    if (fileData && !document && !pdfUrl) {
+      try {
+        // If fileData is base64 string, convert to ArrayBuffer
+        if (typeof fileData === 'string') {
+          const binaryString = atob(fileData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
           }
-
-          if (response.ok) {
-            const arrayBuffer = await response.arrayBuffer();
-            console.log('PDF loaded successfully');
-            setPdfUrl(arrayBuffer);
-            setCurrentPage(1);
-          } else {
-            console.error('Failed to load document:', response.status, response.statusText);
-          }
-        } catch (error) {
-          console.error('Error loading document from server:', error);
-        } finally {
+          setPdfUrl(bytes.buffer);
+          setCurrentPage(1);
+          setLoading(false);
+        } else if (fileData instanceof ArrayBuffer) {
+          setPdfUrl(fileData);
+          setCurrentPage(1);
           setLoading(false);
         }
-      };
-      loadDocumentFromServer();
+      } catch (error) {
+        console.error('Error processing file data:', error);
+        setLoading(false);
+      }
     }
-  }, [documentId, document, pdfUrl]);
+  }, [fileData, document, pdfUrl]);
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];

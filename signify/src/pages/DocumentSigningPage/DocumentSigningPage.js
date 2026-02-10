@@ -11,6 +11,7 @@ function DocumentSigningPage() {
   const [document, setDocument] = useState(null);
   const [documentName, setDocumentName] = useState('');
   const [documentId, setDocumentId] = useState(null);
+  const [fileData, setFileData] = useState(null);
 
   // If navigated from dashboard with document data, use it
   useEffect(() => {
@@ -19,10 +20,12 @@ function DocumentSigningPage() {
       const id = location.state.documentId || doc._id || doc.id;
       setDocumentId(id);
       setDocumentName(doc.name || doc.fileName || '');
-      // Store in localStorage so it persists across page reloads
+      setFileData(doc.fileData || null);
+      // Store the complete document object including file data
       localStorage.setItem('currentDocument', JSON.stringify({
         id: id,
         name: doc.name || doc.fileName || '',
+        fileData: doc.fileData,
         document: doc
       }));
       setDocument(null);
@@ -34,6 +37,7 @@ function DocumentSigningPage() {
           const parsed = JSON.parse(savedDoc);
           setDocumentId(parsed.id);
           setDocumentName(parsed.name);
+          setFileData(parsed.fileData || null);
           setDocument(null);
         } catch (e) {
           console.error('Error parsing saved document:', e);
@@ -80,6 +84,7 @@ function DocumentSigningPage() {
           document={document}
           documentName={documentName}
           documentId={documentId}
+          fileData={fileData}
           onDocumentUpload={handleDocumentUpload}
         />
         <RightPanel />
