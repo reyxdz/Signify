@@ -299,20 +299,3 @@
   color: #2563eb;
   white-space: nowrap;
 }
-
-/* Drag Preview Styles */
-.drag-preview {
-  background-color: rgba(37, 99, 235, 0.08);
-  border: 2px dashed #2563eb;
-  border-radius: 4px;
-  padding: 8px 12px;
-  z-index: 50;
-  pointer-events: none;
-}
-
-.drag-preview-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #2563eb;
-  white-space: nowrap;
-}
