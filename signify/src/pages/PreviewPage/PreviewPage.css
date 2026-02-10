@@ -75,10 +75,15 @@
 .pdf-viewer-wrapper {
   position: relative;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   width: 100%;
-  max-width: 850px;
-  background-color: #f3f4f6;
+  height: auto;
+  overflow: visible;
+  background-color: transparent;
+  gap: 20px;
+  pointer-events: auto;
 }
 
 .react-pdf__Document {
