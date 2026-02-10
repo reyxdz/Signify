@@ -82,6 +82,7 @@ function DocumentSigningPage() {
       <div className="signing-header">
         <div className="header-left">
           <img src={require('../../assets/images/signify_logo.png')} alt="Signify" className="header-logo" />
+          <span className="header-brand">Signify</span>
         </div>
         <div className="header-center">
           {/* Center space reserved for future actions */}
