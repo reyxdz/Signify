@@ -13,6 +13,8 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [droppedTools, setDroppedTools] = useState([]);
+  const [draggedToolId, setDraggedToolId] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Load PDF from file upload
   useEffect(() => {
@@ -125,6 +127,22 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
     
+    // Check if it's a tool being dragged from dropped tools
+    if (draggedToolId) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - rect.left - dragOffset.x;
+      const y = event.clientY - rect.top - dragOffset.y;
+      
+      setDroppedTools(
+        droppedTools.map((tool) =>
+          tool.id === draggedToolId ? { ...tool, x, y } : tool
+        )
+      );
+      setDraggedToolId(null);
+      setDragOffset({ x: 0, y: 0 });
+      return;
+    }
+    
     // Check if it's a PDF file drop
     const file = event.dataTransfer.files?.[0];
     if (file && file.type === 'application/pdf') {
@@ -132,7 +150,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       return;
     }
     
-    // Check if it's a tool being dropped
+    // Check if it's a tool being dropped from the left panel
     try {
       const toolData = event.dataTransfer.getData('application/json');
       if (toolData) {
@@ -221,6 +239,21 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                     <div
                       key={item.id}
                       className="dropped-tool"
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggedToolId(item.id);
+                        const element = e.currentTarget;
+                        const rect = element.getBoundingClientRect();
+                        const canvasRect = canvasRef.current.getBoundingClientRect();
+                        setDragOffset({
+                          x: e.clientX - rect.left,
+                          y: e.clientY - rect.top,
+                        });
+                      }}
+                      onDragEnd={() => {
+                        setDraggedToolId(null);
+                        setDragOffset({ x: 0, y: 0 });
+                      }}
                       style={{
                         position: 'absolute',
                         left: `${item.x}px`,
