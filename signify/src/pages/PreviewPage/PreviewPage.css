@@ -65,7 +65,7 @@
   flex: 1;
   width: 100%;
   background-color: #f3f4f6;
-  padding: 20px;
+  padding: 100px 20px 20px 20px;
   overflow-y: auto;
   position: relative;
 }
