@@ -132,12 +132,14 @@ function DocumentViewer({ document, documentName, documentId, onDocumentUpload }
           <div className="document-header">
             <div className="document-info">
               <h3>{documentName}</h3>
-              <button
-                className="change-document-btn"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                Change Document
-              </button>
+              <div className="button-group">
+                <button
+                  className="change-document-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Change Document
+                </button>
+              </div>
               <input
                 ref={fileInputRef}
                 type="file"

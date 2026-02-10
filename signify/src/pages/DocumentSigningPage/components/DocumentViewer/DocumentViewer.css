@@ -111,6 +111,12 @@
   flex: 1;
 }
 
+.button-group {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .change-document-btn {
   background-color: transparent;
   color: #2563eb;
@@ -272,6 +278,10 @@
 
   .document-info h3 {
     font-size: 16px;
+  }
+
+  .button-group {
+    width: 100%;
   }
 
   .change-document-btn {
