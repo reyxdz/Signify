@@ -78,7 +78,13 @@ const OverviewPage = ({ user }) => {
   };
 
   const handleEditDocument = (doc) => {
-    navigate(`/document/${doc._id || doc.id}`);
+    const id = doc._id || doc.id;
+    if (!id) {
+      alert('Unable to open document: missing document id.');
+      return;
+    }
+
+    navigate(`/document/${id}`);
   };
 
 
