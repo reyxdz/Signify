@@ -1,13 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-
-// Set up PDF worker BEFORE importing anything that uses react-pdf
 import * as pdfjsLib from 'pdfjs-dist';
-pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
-
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+
+// Set up PDF worker BEFORE rendering App
+pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
