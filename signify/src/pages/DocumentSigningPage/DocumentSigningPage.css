@@ -1,7 +1,6 @@
 .document-signing-page {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   min-height: 100vh;
   background: #ffffff;
   padding: 0;
@@ -10,10 +9,56 @@
     sans-serif;
 }
 
+/* Header */
+.signing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.header-left {
+  flex: 0 0 auto;
+}
+
+.header-logo {
+  height: 40px;
+  width: auto;
+}
+
+.header-center {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-filename {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 500px;
+}
+
+.header-right {
+  flex: 0 0 auto;
+}
+
 .signing-container {
   display: flex;
+  flex: 1;
   width: 100%;
-  height: 100vh;
+  height: calc(100vh - 70px);
   background-color: #ffffff;
   border-radius: 0;
   box-shadow: none;

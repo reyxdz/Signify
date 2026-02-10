@@ -79,6 +79,17 @@ function DocumentSigningPage() {
 
   return (
     <div className="document-signing-page">
+      <div className="signing-header">
+        <div className="header-left">
+          <img src="/logo.svg" alt="Signify" className="header-logo" />
+        </div>
+        <div className="header-center">
+          <h2 className="header-filename">{documentName}</h2>
+        </div>
+        <div className="header-right">
+          {/* Reserved for future actions */}
+        </div>
+      </div>
       <div className="signing-container">
         <LeftPanel />
         <DocumentViewer

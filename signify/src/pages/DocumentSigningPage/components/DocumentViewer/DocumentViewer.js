@@ -201,7 +201,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
               <>
                 <div className="pdf-viewer-wrapper">
                   <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} loading={<div>Loading PDF...</div>}>
-                    <Page pageNumber={currentPage} />
+                    <Page pageNumber={currentPage} scale={1.5} />
                   </Document>
                 </div>
 
