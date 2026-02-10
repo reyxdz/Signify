@@ -100,7 +100,7 @@ function DocumentViewer({ document, documentName, documentId, onDocumentUpload }
   };
 
   // Show document if either a file is uploaded or documentId exists
-  const hasDocument = document || (documentId && pdfUrl);
+  const hasDocument = document || documentId;
 
   return (
     <div className="document-viewer">
