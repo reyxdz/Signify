@@ -164,9 +164,13 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     const pageRight = pageLeft + pageRect.width;
     const pageBottom = pageTop + pageRect.height;
     
-    // Check if drop is within page boundaries
-    const isWithinPage = x >= pageLeft && x <= pageRight && y >= pageTop && y <= pageBottom;
-    console.log('Drop position:', { x, y }, 'Page bounds:', { pageLeft, pageTop, pageRight, pageBottom }, 'Within page:', isWithinPage);
+    // Account for tool dimensions (min-width: 120px, min-height: 40px from CSS)
+    const toolWidth = 120;
+    const toolHeight = 40;
+    
+    // Check if drop + tool dimensions would be within page boundaries
+    const isWithinPage = x >= pageLeft && (x + toolWidth) <= pageRight && y >= pageTop && (y + toolHeight) <= pageBottom;
+    console.log('Drop position:', { x, y }, 'Tool size:', { toolWidth, toolHeight }, 'Page bounds:', { pageLeft, pageTop, pageRight, pageBottom }, 'Within page:', isWithinPage);
     
     if (!isWithinPage) {
       console.log('Drop outside page - ignoring');
