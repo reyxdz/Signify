@@ -134,6 +134,35 @@ const DocumentSchema = new mongoose.Schema({
 
 const Document = mongoose.model('documents', DocumentSchema);
 
+// Schema for document tools/fields
+const DocumentToolsSchema = new mongoose.Schema({
+    documentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'documents',
+        required: true,
+        unique: true,
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'users',
+        required: true,
+    },
+    tools: {
+        type: mongoose.Schema.Types.Mixed,
+        default: [],
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now,
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+});
+
+const DocumentTools = mongoose.model('documentTools', DocumentToolsSchema);
+
 // Schema for activity log
 const ActivitySchema = new mongoose.Schema({
     userId: {
@@ -342,6 +371,32 @@ app.post("/api/users/signature", verifyToken, async (req, resp) => {
         });
     } catch (e) {
         console.error("Error saving signature:", e);
+        resp.status(500).send({ message: "Something went wrong", error: e.message });
+    }
+});
+
+// API to get current user data
+app.get("/api/users/profile", verifyToken, async (req, resp) => {
+    try {
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return resp.status(404).send({ message: "User not found" });
+        }
+
+        // Fetch signature if it exists
+        const signatureData = await Signature.findOne({ userId: user._id });
+
+        resp.status(200).send({
+            user: {
+                id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                signature: signatureData,
+            }
+        });
+    } catch (e) {
+        console.error("Error fetching user profile:", e);
         resp.status(500).send({ message: "Something went wrong", error: e.message });
     }
 });
@@ -646,6 +701,77 @@ app.get("/api/documents/:documentId", verifyToken, async (req, resp) => {
     } catch (error) {
         console.error("Error fetching document:", error);
         resp.status(500).send({ message: "Error fetching document", error: error.message });
+    }
+});
+
+// API to save document tools/fields
+app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId } = req.params;
+        const { tools } = req.body;
+
+        console.log("Saving tools for document:", { documentId, userId, toolsCount: tools?.length });
+
+        if (!tools || !Array.isArray(tools)) {
+            return resp.status(400).send({ message: "Tools array is required" });
+        }
+
+        // Verify document belongs to user
+        const document = await Document.findById(documentId);
+        if (!document) {
+            console.error("Document not found:", documentId);
+            return resp.status(404).send({ message: "Document not found" });
+        }
+
+        if (document.userId.toString() !== userId) {
+            console.error("User not authorized:", { documentUserId: document.userId.toString(), requestUserId: userId });
+            return resp.status(403).send({ message: "Not authorized to update this document" });
+        }
+
+        // Update or create document tools
+        let documentTools = await DocumentTools.findOneAndUpdate(
+            { documentId: documentId },
+            {
+                documentId: documentId,
+                userId: userId,
+                tools: tools,
+                updatedAt: new Date(),
+            },
+            { upsert: true, new: true }
+        );
+
+        console.log("Document tools saved for:", documentId);
+        resp.status(200).send({
+            message: "Tools saved successfully",
+            tools: documentTools.tools
+        });
+    } catch (error) {
+        console.error("Error saving document tools:", error);
+        resp.status(500).send({ message: "Error saving tools", error: error.message });
+    }
+});
+
+// API to get document tools/fields
+app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId } = req.params;
+
+        // Verify document belongs to user
+        const document = await Document.findById(documentId);
+        if (!document || document.userId.toString() !== userId) {
+            return resp.status(403).send({ message: "Not authorized to access this document" });
+        }
+
+        const documentTools = await DocumentTools.findOne({ documentId: documentId });
+
+        resp.status(200).send({
+            tools: documentTools ? documentTools.tools : []
+        });
+    } catch (error) {
+        console.error("Error fetching document tools:", error);
+        resp.status(500).send({ message: "Error fetching tools", error: error.message });
     }
 });
 

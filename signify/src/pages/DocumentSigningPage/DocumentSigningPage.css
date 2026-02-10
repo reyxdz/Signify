@@ -65,6 +65,28 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 20px;
+}
+
+.preview-btn {
+  padding: 8px 16px;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-btn:hover {
+  background-color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.preview-btn:active {
+  transform: scale(0.98);
 }
 
 .signing-container {

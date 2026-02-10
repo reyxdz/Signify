@@ -1,19 +1,81 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PenTool, FileText, Mail, User } from 'lucide-react';
 import './LeftPanel.css';
 
 function LeftPanel() {
-  const tools = [
-    { id: 1, icon: PenTool, label: 'My Signature', className: 'tool-signature' },
-    { id: 2, icon: FileText, label: 'My Initial', className: 'tool-initial' },
-    { id: 3, icon: Mail, label: 'My Email', className: 'tool-email' },
-    { id: 4, icon: User, label: 'My Full Name', className: 'tool-fullname' },
-  ];
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    // Fetch user data from the database using JWT token
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No authentication token found');
+          return;
+        }
+
+        const response = await fetch('http://localhost:5000/api/users/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch user data: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setUserData(data.user);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const tools = userData ? [
+    { 
+      id: 1, 
+      icon: PenTool, 
+      label: 'My Signature',
+      value: 'Signature here',
+      placeholder: true,
+      className: 'tool-signature' 
+    },
+    { 
+      id: 2, 
+      icon: FileText, 
+      label: 'My Initial',
+      value: 'Initial here',
+      placeholder: true,
+      className: 'tool-initial' 
+    },
+    { 
+      id: 3, 
+      icon: Mail, 
+      label: 'My Email',
+      value: 'Email here',
+      placeholder: true,
+      className: 'tool-email' 
+    },
+    { 
+      id: 4, 
+      icon: User, 
+      label: 'My Full Name',
+      value: 'Name here',
+      placeholder: true,
+      className: 'tool-fullname' 
+    },
+  ] : [];
 
   const handleDragStart = (e, tool) => {
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/json', JSON.stringify(tool));
-    e.dataTransfer.setData('text/plain', tool.label);
+    e.dataTransfer.setData('text/plain', tool.value);
   };
 
   return (

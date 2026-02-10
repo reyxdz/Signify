@@ -5,7 +5,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import './DocumentViewer.css';
 
-function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload }) {
+function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload, droppedTools: parentDroppedTools, setDroppedTools: setParentDroppedTools }) {
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -13,8 +13,24 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [droppedTools, setDroppedTools] = useState([]);
+  const [droppedTools, setDroppedTools] = useState(parentDroppedTools || []);
   const [draggedToolId, setDraggedToolId] = useState(null);
+
+  // Sync from parent when parent tools change (from database or preview back)
+  useEffect(() => {
+    if (parentDroppedTools && parentDroppedTools.length > 0) {
+      console.log('DocumentViewer: Syncing parent tools:', parentDroppedTools);
+      setDroppedTools(parentDroppedTools);
+    }
+  }, [parentDroppedTools]);
+
+  // Helper function to update tools in both local and parent state
+  const updateTools = (newTools) => {
+    setDroppedTools(newTools);
+    if (setParentDroppedTools) {
+      setParentDroppedTools(newTools);
+    }
+  };
 
   // Load PDF from file upload
   useEffect(() => {
@@ -137,11 +153,10 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     
     // Check if it's a tool being dragged from dropped tools
     if (draggedToolId) {
-      setDroppedTools(
-        droppedTools.map((tool) =>
-          tool.id === draggedToolId ? { ...tool, x, y } : tool
-        )
+      const updatedTools = droppedTools.map((tool) =>
+        tool.id === draggedToolId ? { ...tool, x, y } : tool
       );
+      updateTools(updatedTools);
       setDraggedToolId(null);
       return;
     }
@@ -159,7 +174,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       if (toolData) {
         const tool = JSON.parse(toolData);
         
-        setDroppedTools([
+        const newTools = [
           ...droppedTools,
           {
             id: Date.now(),
@@ -168,7 +183,8 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
             y: y,
             page: currentPage,
           },
-        ]);
+        ];
+        updateTools(newTools);
       }
     } catch (error) {
       console.error('Error parsing dropped tool:', error);
@@ -252,9 +268,9 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                         left: `${item.x}px`,
                         top: `${item.y}px`,
                       }}
-                      onClick={() => setDroppedTools(droppedTools.filter((t) => t.id !== item.id))}
+                      onClick={() => updateTools(droppedTools.filter((t) => t.id !== item.id))}
                     >
-                      <div className="dropped-tool-label">{item.tool.label}</div>
+                      <div className="dropped-tool-label">{item.tool.value || item.tool.label}</div>
                     </div>
                   ))}
                 </div>
