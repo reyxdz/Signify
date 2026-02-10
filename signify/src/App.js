@@ -86,7 +86,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/document/:documentId" element={<DocumentEditorPage user={user} />} />
-          <Route path="/signing" element={<DocumentSigningPage user={user} />} />
+          <Route path="/sign" element={<DocumentSigningPage user={user} />} />
           <Route path="/*" element={<Dashboard user={user} onLogout={handleLogout} />} />
         </Routes>
       </Router>

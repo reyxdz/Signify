@@ -1,32 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
+import DocumentViewer from './components/DocumentViewer/DocumentViewer';
+import LeftPanel from './components/LeftPanel/LeftPanel';
+import RightPanel from './components/RightPanel/RightPanel';
 import './DocumentSigningPage.css';
-import LeftPanel from './components/LeftPanel';
-import RightPanel from './components/RightPanel';
-import DocumentViewer from './components/DocumentViewer';
 
-const DocumentSigningPage = ({ user }) => {
+function DocumentSigningPage() {
+  const [document, setDocument] = useState(null);
+  const [documentName, setDocumentName] = useState('');
+
+  const handleDocumentUpload = (file) => {
+    setDocument(file);
+    setDocumentName(file.name);
+  };
+
   return (
-    <div className="document-signing-page container">
-      <aside className="side-panel left">
+    <div className="document-signing-page">
+      <div className="signing-container">
         <LeftPanel />
-      </aside>
-
-      <main className="document-viewer-area">
-        <header className="viewer-header">
-          <h2>Document Signing</h2>
-          <p className="muted">Upload a PDF or choose a document to begin placing signatures.</p>
-        </header>
-
-        <section className="viewer-card">
-          <DocumentViewer />
-        </section>
-      </main>
-
-      <aside className="side-panel right">
+        <DocumentViewer
+          document={document}
+          documentName={documentName}
+          onDocumentUpload={handleDocumentUpload}
+        />
         <RightPanel />
-      </aside>
+      </div>
     </div>
   );
-};
+}
 
 export default DocumentSigningPage;
