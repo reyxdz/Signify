@@ -153,7 +153,10 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     
     // Get the PDF page element to validate drop area
     const pdfPage = wrapper.querySelector('.react-pdf__Page');
-    if (!pdfPage) return;
+    if (!pdfPage) {
+      console.warn('PDF page element not found');
+      return;
+    }
     
     const pageRect = pdfPage.getBoundingClientRect();
     const pageLeft = pageRect.left - wrapperRect.left;
@@ -163,7 +166,12 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     
     // Check if drop is within page boundaries
     const isWithinPage = x >= pageLeft && x <= pageRight && y >= pageTop && y <= pageBottom;
-    if (!isWithinPage) return; // Ignore drops outside the page
+    console.log('Drop position:', { x, y }, 'Page bounds:', { pageLeft, pageTop, pageRight, pageBottom }, 'Within page:', isWithinPage);
+    
+    if (!isWithinPage) {
+      console.log('Drop outside page - ignoring');
+      return; // Ignore drops outside the page
+    }
     
     // Check if it's a tool being dragged from dropped tools
     if (draggedToolId) {
