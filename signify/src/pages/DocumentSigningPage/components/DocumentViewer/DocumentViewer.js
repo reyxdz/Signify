@@ -173,27 +173,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
         </div>
       ) : (
         <div className="document-content">
-          <div className="document-header">
-            <div className="document-info">
-              <h3>{documentName}</h3>
-              <div className="button-group">
-                <button
-                  className="change-document-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Change Document
-                </button>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
-              />
-            </div>
-          </div>
-
           <div className="document-canvas">
             {loading ? (
               <div className="pdf-loading">Loading PDF...</div>

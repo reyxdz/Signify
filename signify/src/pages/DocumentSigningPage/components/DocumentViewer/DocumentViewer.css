@@ -88,55 +88,6 @@
   overflow: hidden;
 }
 
-.document-header {
-  padding: 16px 24px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  flex-shrink: 0;
-}
-
-.document-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.document-info h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-  word-break: break-all;
-  flex: 1;
-}
-
-.button-group {
-  display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.change-document-btn {
-  background-color: transparent;
-  color: #2563eb;
-  border: 1px solid #2563eb;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.change-document-btn:hover {
-  background-color: #f0f9ff;
-  border-color: #1d4ed8;
-  color: #1d4ed8;
-}
-
 /* Document Canvas */
 .document-canvas {
   flex: 1;
