@@ -79,11 +79,9 @@
   align-items: center;
   justify-content: flex-start;
   width: 100%;
-  height: auto;
-  overflow: visible;
+  max-width: 850px;
   background-color: transparent;
   gap: 20px;
-  pointer-events: auto;
 }
 
 .react-pdf__Document {
@@ -119,7 +117,7 @@
   border-radius: 4px;
   padding: 8px 12px;
   cursor: default;
-  z-index: 50;
+  z-index: 10;
   pointer-events: none;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
 }
