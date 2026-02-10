@@ -33,29 +33,43 @@ function DocumentViewer({ document, documentName, documentId, onDocumentUpload }
 
   // Load PDF from documentId
   useEffect(() => {
-    if (documentId && !document) {
+    if (documentId && !document && !pdfUrl) {
       const loadDocumentFromServer = async () => {
         setLoading(true);
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
+          console.log('Loading document:', documentId);
+          
+          // Try the download endpoint first
+          let response = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
+          // If download endpoint fails, try the documents endpoint
+          if (!response.ok) {
+            console.log('Download endpoint failed, trying documents endpoint');
+            response = await fetch(`http://localhost:5000/api/documents/${documentId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          }
+
           if (response.ok) {
             const arrayBuffer = await response.arrayBuffer();
+            console.log('PDF loaded successfully');
             setPdfUrl(arrayBuffer);
             setCurrentPage(1);
+          } else {
+            console.error('Failed to load document:', response.status, response.statusText);
           }
         } catch (error) {
-          console.error('Error loading document:', error);
+          console.error('Error loading document from server:', error);
         } finally {
           setLoading(false);
         }
       };
       loadDocumentFromServer();
     }
-  }, [documentId, document]);
+  }, [documentId, document, pdfUrl]);
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
