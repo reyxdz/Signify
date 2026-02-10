@@ -59,31 +59,41 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
             console.log('Fetching PDF from backend for documentId:', documentId);
             const token = localStorage.getItem('token');
             
-            // Try to fetch the file content from backend
-            const response = await fetch(`http://localhost:5000/api/documents/${documentId}/file`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (!response.ok) {
-              console.log('File endpoint not available, trying download endpoint');
-              // Fallback to download endpoint
-              const downloadResponse = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
+            try {
+              // Fetch the document with fileData from backend
+              const response = await fetch(`http://localhost:5000/api/documents/${documentId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
-              
-              if (downloadResponse.ok) {
-                const arrayBuffer = await downloadResponse.arrayBuffer();
-                console.log('PDF fetched from backend, size:', arrayBuffer.byteLength);
-                setPdfUrl(arrayBuffer);
-                setCurrentPage(1);
+
+              if (response.ok) {
+                const result = await response.json();
+                console.log('Document fetched from backend:', result);
+                
+                // The fileData comes back as base64 string
+                if (result.data && result.data.fileData) {
+                  const base64Data = result.data.fileData;
+                  console.log('Processing base64 fileData from API');
+                  
+                  // Convert base64 to ArrayBuffer
+                  const binaryString = atob(base64Data);
+                  const bytes = new Uint8Array(binaryString.length);
+                  for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                  }
+                  const buffer = bytes.buffer;
+                  console.log('ArrayBuffer created from base64, size:', buffer.byteLength);
+                  setPdfUrl(buffer);
+                  setCurrentPage(1);
+                } else {
+                  console.error('No fileData found in document response');
+                }
               } else {
-                console.error('Failed to fetch PDF:', downloadResponse.status);
+                console.error('Failed to fetch document:', response.status, response.statusText);
+                const errorText = await response.text();
+                console.error('Error details:', errorText);
               }
-            } else {
-              const arrayBuffer = await response.arrayBuffer();
-              console.log('PDF fetched from backend, size:', arrayBuffer.byteLength);
-              setPdfUrl(arrayBuffer);
-              setCurrentPage(1);
+            } catch (error) {
+              console.error('Error fetching document from backend:', error);
             }
           }
         } catch (error) {
