@@ -31,29 +31,28 @@ function DocumentViewer({ document, documentName, documentId, onDocumentUpload }
   // Load PDF from documentId
   useEffect(() => {
     if (documentId && !document) {
+      const loadDocumentFromServer = async () => {
+        setLoading(true);
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (response.ok) {
+            const arrayBuffer = await response.arrayBuffer();
+            setPdfUrl(arrayBuffer);
+            setCurrentPage(1);
+          }
+        } catch (error) {
+          console.error('Error loading document:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
       loadDocumentFromServer();
     }
   }, [documentId, document]);
-
-  const loadDocumentFromServer = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const arrayBuffer = await response.arrayBuffer();
-        setPdfUrl(arrayBuffer);
-        setCurrentPage(1);
-      }
-    } catch (error) {
-      console.error('Error loading document:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
