@@ -1,9 +1,59 @@
-import React, { useRef } from 'react';
-import { Upload } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Document, Page } from 'react-pdf';
+import { Upload, ChevronUp, ChevronDown } from 'lucide-react';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import './DocumentViewer.css';
+
+// Set up PDF worker
+import { pdfjs } from 'react-pdf';
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 function DocumentViewer({ document, documentName, documentId, onDocumentUpload }) {
   const fileInputRef = useRef(null);
+  const [numPages, setNumPages] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // Load PDF from file upload
+  useEffect(() => {
+    if (document) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPdfUrl(e.target.result);
+        setCurrentPage(1);
+      };
+      reader.readAsArrayBuffer(document);
+    }
+  }, [document]);
+
+  // Load PDF from documentId
+  useEffect(() => {
+    if (documentId && !document) {
+      loadDocumentFromServer();
+    }
+  }, [documentId, document]);
+
+  const loadDocumentFromServer = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        setPdfUrl(arrayBuffer);
+        setCurrentPage(1);
+      }
+    } catch (error) {
+      console.error('Error loading document:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
@@ -34,8 +84,21 @@ function DocumentViewer({ document, documentName, documentId, onDocumentUpload }
     }
   };
 
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+    setCurrentPage(1);
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => (prev < numPages ? prev + 1 : prev));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
+  };
+
   // Show document if either a file is uploaded or documentId exists
-  const hasDocument = document || documentId;
+  const hasDocument = document || (documentId && pdfUrl);
 
   return (
     <div className="document-viewer">
@@ -82,12 +145,49 @@ function DocumentViewer({ document, documentName, documentId, onDocumentUpload }
               />
             </div>
           </div>
+
           <div className="document-canvas">
-            <div className="pdf-placeholder">
-              <p>PDF Viewer Coming Soon</p>
-              <p className="file-info">File: {documentName}</p>
-              {documentId && <p className="document-id">ID: {documentId}</p>}
-            </div>
+            {loading ? (
+              <div className="pdf-loading">Loading PDF...</div>
+            ) : pdfUrl ? (
+              <>
+                <div className="pdf-viewer-wrapper">
+                  <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} loading={<div>Loading PDF...</div>}>
+                    <Page pageNumber={currentPage} />
+                  </Document>
+                </div>
+
+                {numPages && numPages > 1 && (
+                  <div className="pdf-navigation">
+                    <button
+                      className="nav-btn"
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 1}
+                      title="Previous page"
+                    >
+                      <ChevronUp size={20} />
+                    </button>
+                    <div className="page-info">
+                      Page {currentPage} of {numPages}
+                    </div>
+                    <button
+                      className="nav-btn"
+                      onClick={handleNextPage}
+                      disabled={currentPage === numPages}
+                      title="Next page"
+                    >
+                      <ChevronDown size={20} />
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="pdf-placeholder">
+                <p>PDF Viewer Coming Soon</p>
+                <p className="file-info">File: {documentName}</p>
+                {documentId && <p className="document-id">ID: {documentId}</p>}
+              </div>
+            )}
           </div>
         </div>
       )}
