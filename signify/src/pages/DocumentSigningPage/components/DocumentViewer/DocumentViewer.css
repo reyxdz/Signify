@@ -277,8 +277,13 @@
 
 /* Dropped Tool Styles */
 .dropped-tool {
-  background-color: rgba(37, 99, 235, 0.1);
-  border: 2px solid #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  min-height: 40px;
+  background-color: #f0f9ff;
+  border: 2px dashed #3b82f6;
   border-radius: 4px;
   padding: 8px 12px;
   cursor: move;
@@ -286,16 +291,22 @@
   z-index: 10;
   user-select: none;
   touch-action: none;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
 }
 
 .dropped-tool:hover {
-  background-color: rgba(37, 99, 235, 0.15);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  background-color: #e0f2fe;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .dropped-tool-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
   font-size: 12px;
   font-weight: 600;
-  color: #2563eb;
+  color: #3b82f6;
   white-space: nowrap;
 }

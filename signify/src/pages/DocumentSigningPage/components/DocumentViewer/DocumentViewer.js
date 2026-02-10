@@ -164,9 +164,10 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     const pageRight = pageLeft + pageRect.width;
     const pageBottom = pageTop + pageRect.height;
     
-    // Account for tool dimensions (min-width: 120px, min-height: 40px from CSS)
-    const toolWidth = 120;
-    const toolHeight = 40;
+    // Account for tool dimensions (min-width: 120px, min-height: 40px + padding: 8px 12px on all sides)
+    // Total: 120 + 24 (left+right padding) = 144px width, 40 + 16 (top+bottom padding) = 56px height
+    const toolWidth = 144;
+    const toolHeight = 56;
     
     // Check if drop + tool dimensions would be within page boundaries
     const isWithinPage = x >= pageLeft && (x + toolWidth) <= pageRight && y >= pageTop && (y + toolHeight) <= pageBottom;

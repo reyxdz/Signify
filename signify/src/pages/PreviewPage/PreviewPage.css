@@ -117,6 +117,7 @@
   border-radius: 4px;
   padding: 8px 12px;
   cursor: default;
+  transition: all 0.2s ease;
   z-index: 10;
   pointer-events: none;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
