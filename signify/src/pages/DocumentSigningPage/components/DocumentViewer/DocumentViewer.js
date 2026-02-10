@@ -8,6 +8,7 @@ import './DocumentViewer.css';
 function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload }) {
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
+  const wrapperRef = useRef(null);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -127,14 +128,21 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
     
+    // Get the wrapper element to calculate relative position
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const canvasRect = event.currentTarget.getBoundingClientRect();
+    const scrollTop = event.currentTarget.scrollTop;
+    const scrollLeft = event.currentTarget.scrollLeft;
+    
+    // Calculate position relative to wrapper
+    const x = event.clientX - wrapperRect.left;
+    const y = event.clientY - wrapperRect.top + scrollTop;
+    
     // Check if it's a tool being dragged from dropped tools
     if (draggedToolId) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      const scrollTop = event.currentTarget.scrollTop;
-      const scrollLeft = event.currentTarget.scrollLeft;
-      const x = event.clientX - rect.left + scrollLeft;
-      const y = event.clientY - rect.top + scrollTop;
-      
       setDroppedTools(
         droppedTools.map((tool) =>
           tool.id === draggedToolId ? { ...tool, x, y } : tool
@@ -157,11 +165,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       const toolData = event.dataTransfer.getData('application/json');
       if (toolData) {
         const tool = JSON.parse(toolData);
-        const rect = event.currentTarget.getBoundingClientRect();
-        const scrollTop = event.currentTarget.scrollTop;
-        const scrollLeft = event.currentTarget.scrollLeft;
-        const x = event.clientX - rect.left + scrollLeft;
-        const y = event.clientY - rect.top + scrollTop;
         
         setDroppedTools([
           ...droppedTools,
@@ -235,7 +238,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
               <div className="pdf-loading">Loading PDF...</div>
             ) : pdfUrl ? (
               <>
-                <div className="pdf-viewer-wrapper">
+                <div className="pdf-viewer-wrapper" ref={wrapperRef}>
                   <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} loading={<div>Loading PDF...</div>}>
                     <Page pageNumber={currentPage} scale={1.5} />
                   </Document>
