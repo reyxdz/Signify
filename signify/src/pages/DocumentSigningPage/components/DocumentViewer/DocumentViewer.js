@@ -15,7 +15,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [loading, setLoading] = useState(false);
   const [droppedTools, setDroppedTools] = useState([]);
   const [draggedToolId, setDraggedToolId] = useState(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Load PDF from file upload
   useEffect(() => {
@@ -104,7 +103,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       };
       loadPDF();
     }
-  }, [documentId, document, fileData]);
+  }, [documentId, document, fileData, pdfUrl]);
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
@@ -127,7 +126,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const handleDrop = (event) => {
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
-    setDragPreview(null);erRef.current;
+    const wrapper = wrapperRef.current;
     if (!wrapper) return;
     
     const wrapperRect = wrapper.getBoundingClientRect();
@@ -144,7 +143,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
         )
       );
       setDraggedToolId(null);
-      setDragOffset({ x: 0, y: 0 });
       return;
     }
     
@@ -244,17 +242,9 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                       draggable
                       onDragStart={(e) => {
                         setDraggedToolId(item.id);
-                        const element = e.currentTarget;
-                        const rect = element.getBoundingClientRect();
-                        const canvasRect = canvasRef.current.getBoundingClientRect();
-                        setDragOffset({
-                          x: e.clientX - rect.left,
-                          y: e.clientY - rect.top,
-                        });
                       }}
                       onDragEnd={() => {
                         setDraggedToolId(null);
-                        setDragOffset({ x: 0, y: 0 });
                       }}
                       style={{
                         position: 'absolute',
