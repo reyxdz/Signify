@@ -147,9 +147,23 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     
     const wrapperRect = wrapper.getBoundingClientRect();
     
-    // Calculate position relative to wrapper - no scroll adjustment needed
+    // Calculate position relative to wrapper
     const x = event.clientX - wrapperRect.left;
     const y = event.clientY - wrapperRect.top;
+    
+    // Get the PDF page element to validate drop area
+    const pdfPage = wrapper.querySelector('.react-pdf__Page');
+    if (!pdfPage) return;
+    
+    const pageRect = pdfPage.getBoundingClientRect();
+    const pageLeft = pageRect.left - wrapperRect.left;
+    const pageTop = pageRect.top - wrapperRect.top;
+    const pageRight = pageLeft + pageRect.width;
+    const pageBottom = pageTop + pageRect.height;
+    
+    // Check if drop is within page boundaries
+    const isWithinPage = x >= pageLeft && x <= pageRight && y >= pageTop && y <= pageBottom;
+    if (!isWithinPage) return; // Ignore drops outside the page
     
     // Check if it's a tool being dragged from dropped tools
     if (draggedToolId) {
