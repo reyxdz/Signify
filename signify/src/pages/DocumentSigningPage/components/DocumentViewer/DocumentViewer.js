@@ -6,9 +6,9 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import './DocumentViewer.css';
 
 // Set up PDF worker
-import { pdfjs } from 'react-pdf';
+import * as pdfjsLib from 'pdfjs-dist';
 // Use local worker from public folder (bundled with pdfjs-dist)
-pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
 
 function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload }) {
   const fileInputRef = useRef(null);
