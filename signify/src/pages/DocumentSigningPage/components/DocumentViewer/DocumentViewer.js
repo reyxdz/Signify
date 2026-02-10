@@ -5,12 +5,10 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import './DocumentViewer.css';
 
-// Set up PDF worker - use local worker file
+// Set up PDF worker
 import { pdfjs } from 'react-pdf';
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
-  import.meta.url,
-).toString();
+// Use a compatible version from CDN or bundled
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload }) {
   const fileInputRef = useRef(null);
