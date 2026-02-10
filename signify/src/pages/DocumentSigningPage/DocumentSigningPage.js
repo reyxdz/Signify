@@ -81,13 +81,13 @@ function DocumentSigningPage() {
     <div className="document-signing-page">
       <div className="signing-header">
         <div className="header-left">
-          <img src="/logo.svg" alt="Signify" className="header-logo" />
+          <img src={require('../../assets/images/signify_logo.png')} alt="Signify" className="header-logo" />
         </div>
         <div className="header-center">
-          <h2 className="header-filename">{documentName}</h2>
+          {/* Center space reserved for future actions */}
         </div>
         <div className="header-right">
-          {/* Reserved for future actions */}
+          <h2 className="header-filename">{documentName}</h2>
         </div>
       </div>
       <div className="signing-container">
