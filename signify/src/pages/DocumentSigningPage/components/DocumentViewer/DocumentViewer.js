@@ -7,8 +7,8 @@ import './DocumentViewer.css';
 
 // Set up PDF worker
 import { pdfjs } from 'react-pdf';
-// Use a compatible version from CDN or bundled
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+// Use worker from CDN matching pdfjs-dist version (5.4.624)
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.624/pdf.worker.min.js`;
 
 function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload }) {
   const fileInputRef = useRef(null);
