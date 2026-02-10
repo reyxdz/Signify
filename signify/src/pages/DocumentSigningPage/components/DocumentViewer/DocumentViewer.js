@@ -7,10 +7,12 @@ import './DocumentViewer.css';
 
 function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload }) {
   const fileInputRef = useRef(null);
+  const canvasRef = useRef(null);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [droppedTools, setDroppedTools] = useState([]);
 
   // Load PDF from file upload
   useEffect(() => {
@@ -122,11 +124,38 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const handleDrop = (event) => {
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
+    
+    // Check if it's a PDF file drop
     const file = event.dataTransfer.files?.[0];
     if (file && file.type === 'application/pdf') {
       onDocumentUpload(file);
-    } else if (file) {
-      alert('Please drop a PDF file');
+      return;
+    }
+    
+    // Check if it's a tool being dropped
+    try {
+      const toolData = event.dataTransfer.getData('application/json');
+      if (toolData) {
+        const tool = JSON.parse(toolData);
+        const rect = event.currentTarget.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        setDroppedTools([
+          ...droppedTools,
+          {
+            id: Date.now(),
+            tool: tool,
+            x: x,
+            y: y,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error parsing dropped tool:', error);
+      if (file) {
+        alert('Please drop a PDF file');
+      }
     }
   };
 
@@ -173,7 +202,13 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
         </div>
       ) : (
         <div className="document-content">
-          <div className="document-canvas">
+          <div 
+            className="document-canvas"
+            ref={canvasRef}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             {loading ? (
               <div className="pdf-loading">Loading PDF...</div>
             ) : pdfUrl ? (
@@ -182,6 +217,20 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                   <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} loading={<div>Loading PDF...</div>}>
                     <Page pageNumber={currentPage} scale={1.5} />
                   </Document>
+                  {droppedTools.map((item) => (
+                    <div
+                      key={item.id}
+                      className="dropped-tool"
+                      style={{
+                        position: 'absolute',
+                        left: `${item.x}px`,
+                        top: `${item.y}px`,
+                      }}
+                      onClick={() => setDroppedTools(droppedTools.filter((t) => t.id !== item.id))}
+                    >
+                      <div className="dropped-tool-label">{item.tool.label}</div>
+                    </div>
+                  ))}
                 </div>
 
                 {numPages && numPages > 1 && (

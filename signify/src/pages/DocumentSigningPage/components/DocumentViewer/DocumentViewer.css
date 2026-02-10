@@ -113,6 +113,7 @@
   overflow: visible;
   background-color: transparent;
   gap: 20px;
+  position: relative;
 }
 
 .pdf-viewer-wrapper > div {
@@ -258,15 +259,41 @@
   width: 100%;
   height: auto;
   gap: 20px;
+  position: relative;
 }
 
 .react-pdf__Page {
   background-color: #ffffff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   align-items: center;
   justify-content: center;
   height: auto;
+  position: relative;
+}
+
+/* Dropped Tool Styles */
+.dropped-tool {
+  background-color: rgba(37, 99, 235, 0.1);
+  border: 2px solid #2563eb;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 100;
+  user-select: none;
+}
+
+.dropped-tool:hover {
+  background-color: rgba(37, 99, 235, 0.15);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.dropped-tool-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  white-space: nowrap;
 }

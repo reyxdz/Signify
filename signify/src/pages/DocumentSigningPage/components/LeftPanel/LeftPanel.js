@@ -10,6 +10,12 @@ function LeftPanel() {
     { id: 4, icon: User, label: 'My Full Name', className: 'tool-fullname' },
   ];
 
+  const handleDragStart = (e, tool) => {
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/json', JSON.stringify(tool));
+    e.dataTransfer.setData('text/plain', tool.label);
+  };
+
   return (
     <div className="left-panel">
       <div className="panel-header">
@@ -20,7 +26,12 @@ function LeftPanel() {
           {tools.map((tool) => {
             const IconComponent = tool.icon;
             return (
-              <button key={tool.id} className={`tool-item ${tool.className}`}>
+              <button
+                key={tool.id}
+                className={`tool-item ${tool.className}`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, tool)}
+              >
                 <div className="tool-icon">
                   <IconComponent size={24} />
                 </div>
