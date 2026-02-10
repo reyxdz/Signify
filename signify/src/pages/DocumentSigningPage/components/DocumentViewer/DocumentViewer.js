@@ -5,11 +5,6 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import './DocumentViewer.css';
 
-// Set up PDF worker
-import * as pdfjsLib from 'pdfjs-dist';
-// Use local worker from public folder (bundled with pdfjs-dist)
-pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
-
 function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload }) {
   const fileInputRef = useRef(null);
   const [numPages, setNumPages] = useState(null);
