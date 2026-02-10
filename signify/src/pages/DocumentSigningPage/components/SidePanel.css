@@ -1,0 +1,14 @@
+/* Basic styling for left/right side panels */
+.side-panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 160px;
+}
+
+/* Placeholder look */
+.side-panel-inner::before {
+  content: "";
+  display: block;
+  height: 100%;
+}
