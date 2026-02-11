@@ -216,6 +216,9 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     const x = event.clientX - wrapperRect.left;
     const y = event.clientY - wrapperRect.top;
     
+    // Check if it's a tool being dragged from dropped tools (via drag data)
+    const droppedToolData = event.dataTransfer.getData('text/plain');
+    
     // Get the PDF page element to validate drop area
     const pdfPage = wrapper.querySelector('.react-pdf__Page');
     if (!pdfPage) {
@@ -252,8 +255,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       return; // Ignore drops outside the page
     }
 
-    // Check if it's a tool being dragged from dropped tools (via drag data)
-    const droppedToolData = event.dataTransfer.getData('text/plain');
+    // If it's a tool being dragged from dropped tools (via drag data)
     if (droppedToolData && droppedToolData.startsWith('dropped-')) {
       const toolId = droppedToolData.replace('dropped-', '');
       const updatedTools = droppedTools.map((tool) =>
