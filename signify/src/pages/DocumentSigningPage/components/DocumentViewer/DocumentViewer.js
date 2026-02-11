@@ -21,20 +21,15 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const lastSyncTimeRef = useRef(0);
 
   // Sync from parent when parent tools change (from database or preview back)
+  // Only sync on INITIAL LOAD, not on every parent update to avoid overwriting local changes
   useEffect(() => {
-    if (parentDroppedTools && parentDroppedTools.length > 0) {
-      // Check if this is a fresh load from database or a sync back from parent after our update
-      const now = Date.now();
-      // Only sync if more than 500ms has passed since last sync (to avoid rapid resets from loadToolsFromDatabase)
-      if (now - lastSyncTimeRef.current > 500) {
-        console.log('DocumentViewer: Syncing parent tools:', parentDroppedTools);
-        setDroppedTools(parentDroppedTools);
-        lastSyncTimeRef.current = now;
-      } else {
-        console.log('DocumentViewer: Skipping sync (too soon, likely database reload)');
-      }
+    if (parentDroppedTools && parentDroppedTools.length > 0 && droppedTools.length === 0) {
+      // Only sync if local tools are empty (initial load scenario)
+      console.log('DocumentViewer: Initial sync from parent tools:', parentDroppedTools);
+      setDroppedTools(parentDroppedTools);
+      lastSyncTimeRef.current = Date.now();
     }
-  }, [parentDroppedTools]);
+  }, []);
 
   // Helper function to update tools in both local and parent state
   const updateTools = (newTools) => {
