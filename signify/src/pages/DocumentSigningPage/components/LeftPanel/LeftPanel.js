@@ -45,6 +45,7 @@ function LeftPanel() {
       value: (typeof userData.signature === 'object' && userData.signature?.signature) 
         ? userData.signature.signature 
         : (userData.signature || 'Signature here'),
+      displayValue: '[Signature Image]', // Display placeholder for image
       placeholder: !userData.signature,
       className: 'tool-signature' 
     },
@@ -55,6 +56,7 @@ function LeftPanel() {
       value: (typeof userData.signature === 'object' && userData.signature?.initials)
         ? userData.signature.initials
         : (userData.initial || 'Initial here'),
+      displayValue: '[Initials Image]', // Display placeholder for image
       placeholder: !userData.signature,
       className: 'tool-initial' 
     },

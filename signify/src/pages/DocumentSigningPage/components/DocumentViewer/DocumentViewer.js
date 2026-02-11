@@ -298,7 +298,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                       }}
                       onClick={() => updateTools(droppedTools.filter((t) => t.id !== item.id))}
                     >
-                      <div className="dropped-tool-label">{item.tool.value || item.tool.label}</div>
+                      <div className="dropped-tool-label">{item.tool.displayValue || item.tool.value || item.tool.label}</div>
                     </div>
                   ))}
                 </div>

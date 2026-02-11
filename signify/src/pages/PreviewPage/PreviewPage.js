@@ -202,7 +202,7 @@ function PreviewPage() {
             >
               <div className="preview-tool-content">
                 <span className="preview-tool-type">{item.tool.label}</span>
-                <span className="preview-tool-value">{item.tool.value}</span>
+                <span className="preview-tool-value">{item.tool.displayValue || item.tool.value}</span>
               </div>
             </div>
           ))}
