@@ -367,10 +367,8 @@
   align-items: center;
   gap: 4px;
   text-align: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: #3b82f6;
   white-space: nowrap;
+  /* Font styling applied via inline styles for customization */
 }
 
 .dropped-tool img {
