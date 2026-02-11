@@ -259,9 +259,11 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     // If it's a tool being dragged from dropped tools (via drag data)
     if (droppedToolData && droppedToolData.startsWith('dropped-')) {
       const toolId = droppedToolData.replace('dropped-', '');
+      console.log('Updating tool position - toolId:', toolId, 'new position:', {x, y});
       const updatedTools = droppedTools.map((tool) =>
         tool.id === toolId ? { ...tool, x, y } : tool
       );
+      console.log('Updated tools:', updatedTools);
       updateTools(updatedTools);
       setDraggedToolId(null);
       return;
@@ -372,6 +374,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                   {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => {
                     // Check if this is a signature/initial image (base64 data starts with 'data:image')
                     const isImage = typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
+                    console.log('Rendering tool:', item.id, 'at position:', {x: item.x, y: item.y});
                     
                     return (
                       <div
