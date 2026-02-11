@@ -115,6 +115,8 @@ function DocumentSigningPage() {
               y: item.y,
               page: item.page,
               label: item.tool.label,
+              width: item.width,
+              height: item.height,
             }))
           );
         }
@@ -146,6 +148,8 @@ function DocumentSigningPage() {
         y: item.y,
         page: item.page,
         label: item.tool.label,
+        width: item.width,
+        height: item.height,
       }))
     );
 
@@ -172,6 +176,8 @@ function DocumentSigningPage() {
           x: item.x,
           y: item.y,
           page: item.page,
+          ...(item.width && { width: item.width }),
+          ...(item.height && { height: item.height }),
         }));
         
         const response = await fetch(`http://localhost:5000/api/documents/${documentId}/tools`, {
