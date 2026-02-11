@@ -14,20 +14,17 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [droppedTools, setDroppedTools] = useState([]);
-  const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
   const [draggedToolId, setDraggedToolId] = useState(null);
   const [resizingToolId, setResizingToolId] = useState(null);
   const [resizeStart, setResizeStart] = useState(null);
   const resizingRef = useRef(false);
 
-  // Sync from parent ONLY on very first mount (when parentDroppedTools arrives)
+  // Load tools from parent on first render only
   useEffect(() => {
-    if (!isInitialLoadDone && parentDroppedTools && parentDroppedTools.length > 0) {
-      console.log('DocumentViewer: Initial load from parent:', parentDroppedTools);
+    if (droppedTools.length === 0 && parentDroppedTools && parentDroppedTools.length > 0) {
       setDroppedTools(parentDroppedTools);
-      setIsInitialLoadDone(true);
     }
-  }, [parentDroppedTools, isInitialLoadDone]);
+  }, []);
 
   // Helper function to update tools in both local and parent state
   const updateTools = (newTools) => {
