@@ -89,14 +89,21 @@ function DocumentSigningPage() {
         const data = await response.json();
         if (data.tools && data.tools.length > 0) {
           // Reconstruct tools with icons since icons can't be stored in database
-          const reconstructedTools = data.tools.map(item => ({
-            ...item,
-            tool: {
-              ...item.tool,
-              // Add icon back based on label
-              icon: ICON_MAP[item.tool.label],
-            }
-          }));
+          const reconstructedTools = data.tools.map(item => {
+            // Initialize dimensions for signature/initial images if not set
+            const isSignatureImage = item.tool.label === 'My Signature' || item.tool.label === 'My Initial';
+            return {
+              ...item,
+              tool: {
+                ...item.tool,
+                // Add icon back based on label
+                icon: ICON_MAP[item.tool.label],
+              },
+              // Set default dimensions for signature images if not already set
+              ...(isSignatureImage && !item.width && { width: 120 }),
+              ...(isSignatureImage && !item.height && { height: 80 }),
+            };
+          });
           
           setDroppedTools(reconstructedTools);
           console.log('Loaded tools from database for document:', docId, reconstructedTools);
