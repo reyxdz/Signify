@@ -188,8 +188,8 @@ function PreviewPage() {
           <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} loading={<div>Loading PDF...</div>}>
             <Page pageNumber={currentPage} scale={1.5} />
           </Document>
-          {/* Display dropped tools as read-only fields */}
-          {droppedTools.filter((item) => item.page === currentPage).map((item) => (
+          {/* Display dropped tools as read-only fields - only after PDF loads */}
+          {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => (
             <div
               key={item.id}
               className="preview-tool-field"

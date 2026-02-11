@@ -279,7 +279,8 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                   <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} loading={<div>Loading PDF...</div>}>
                     <Page pageNumber={currentPage} scale={1.5} />
                   </Document>
-                  {droppedTools.filter((item) => item.page === currentPage).map((item) => (
+                  {/* Only render tools after PDF has loaded successfully */}
+                  {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => (
                     <div
                       key={item.id}
                       className="dropped-tool"
