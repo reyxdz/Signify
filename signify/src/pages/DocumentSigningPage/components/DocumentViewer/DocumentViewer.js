@@ -141,8 +141,8 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const handleResizeMove = useCallback((e) => {
     if (!resizeStartRef.current) return;
 
-    const deltaX = (e.clientX - resizeStartRef.current.x) * 0.5; // Scale factor for smoother resizing
-    const deltaY = (e.clientY - resizeStartRef.current.y) * 0.5; // Scale factor for smoother resizing
+    const deltaX = e.clientX - resizeStartRef.current.x;
+    const deltaY = e.clientY - resizeStartRef.current.y;
     const toolId = resizeStartRef.current.toolId;
     const corner = resizeStartRef.current.corner;
 
@@ -186,6 +186,10 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     });
 
     updateTools(updatedTools);
+    
+    // Update the start position for next move (makes it incremental)
+    resizeStartRef.current.x = e.clientX;
+    resizeStartRef.current.y = e.clientY;
   }, [updateTools]);
 
   const handleResizeEnd = useCallback(() => {
