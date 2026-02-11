@@ -37,7 +37,7 @@ function LeftPanel() {
     fetchUserData();
   }, []);
 
-  const tools = userData ? [
+  const myInformationTools = userData ? [
     { 
       id: 1, 
       icon: PenTool, 
@@ -72,6 +72,41 @@ function LeftPanel() {
     },
   ] : [];
 
+  const recipientTools = [
+    { 
+      id: 5, 
+      icon: PenTool, 
+      label: 'Recipient Signature',
+      value: 'Signature here',
+      placeholder: true,
+      className: 'tool-recipient-signature' 
+    },
+    { 
+      id: 6, 
+      icon: FileText, 
+      label: 'Recipient Initial',
+      value: 'Initial here',
+      placeholder: true,
+      className: 'tool-recipient-initial' 
+    },
+    { 
+      id: 7, 
+      icon: Mail, 
+      label: 'Recipient Email',
+      value: 'Email here',
+      placeholder: true,
+      className: 'tool-recipient-email' 
+    },
+    { 
+      id: 8, 
+      icon: User, 
+      label: 'Recipient Full Name',
+      value: 'Name here',
+      placeholder: true,
+      className: 'tool-recipient-fullname' 
+    },
+  ];
+
   const handleDragStart = (e, tool) => {
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/json', JSON.stringify(tool));
@@ -84,23 +119,50 @@ function LeftPanel() {
         <h3>Tools</h3>
       </div>
       <div className="panel-content">
-        <div className="tools-container">
-          {tools.map((tool) => {
-            const IconComponent = tool.icon;
-            return (
-              <button
-                key={tool.id}
-                className={`tool-item ${tool.className}`}
-                draggable
-                onDragStart={(e) => handleDragStart(e, tool)}
-              >
-                <div className="tool-icon">
-                  <IconComponent size={24} />
-                </div>
-                <span className="tool-label">{tool.label}</span>
-              </button>
-            );
-          })}
+        {/* My Information Group */}
+        <div className="tools-group">
+          <div className="tools-group-title">My Information</div>
+          <div className="tools-container">
+            {myInformationTools.map((tool) => {
+              const IconComponent = tool.icon;
+              return (
+                <button
+                  key={tool.id}
+                  className={`tool-item ${tool.className}`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, tool)}
+                >
+                  <div className="tool-icon">
+                    <IconComponent size={24} />
+                  </div>
+                  <span className="tool-label">{tool.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recipients Group */}
+        <div className="tools-group">
+          <div className="tools-group-title">Recipients</div>
+          <div className="tools-container">
+            {recipientTools.map((tool) => {
+              const IconComponent = tool.icon;
+              return (
+                <button
+                  key={tool.id}
+                  className={`tool-item ${tool.className}`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, tool)}
+                >
+                  <div className="tool-icon">
+                    <IconComponent size={24} />
+                  </div>
+                  <span className="tool-label">{tool.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

@@ -27,6 +27,27 @@
 .panel-content {
   flex: 1;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+}
+
+/* Tools Group */
+.tools-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tools-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 /* Tools Container */
