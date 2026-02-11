@@ -277,6 +277,7 @@ function DocumentSigningPage() {
       ...(item.fontSize && { fontSize: item.fontSize }),
       ...(item.fontColor && { fontColor: item.fontColor }),
       ...(item.fontStyles && { fontStyles: item.fontStyles }),
+      ...(item.assignedRecipient && { assignedRecipient: item.assignedRecipient }),
     }));
 
     // Navigate to preview page with dropped tools data
@@ -338,6 +339,7 @@ function DocumentSigningPage() {
           droppedTools={droppedTools}
           onDeleteTool={handleDeleteTool}
           onUpdateToolStyle={handleUpdateToolStyle}
+          documentId={documentId}
         />
       </div>
     </div>

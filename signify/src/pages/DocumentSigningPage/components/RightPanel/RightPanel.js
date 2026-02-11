@@ -1,17 +1,82 @@
-import React from 'react';
-import { Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trash2, Search, X } from 'lucide-react';
 import './RightPanel.css';
 
-function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolStyle }) {
+function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolStyle, documentId }) {
   const selectedTool = droppedTools.find(t => t.id === selectedToolId);
   const isTextField = selectedTool && selectedTool.tool.label && 
     (selectedTool.tool.label === 'My Email' || selectedTool.tool.label === 'My Full Name');
   
-  React.useEffect(() => {
+  const isRecipientField = selectedTool && selectedTool.tool.label && 
+    (selectedTool.tool.label === 'Recipient Signature' || selectedTool.tool.label === 'Recipient Initial' || 
+     selectedTool.tool.label === 'Recipient Email' || selectedTool.tool.label === 'Recipient Full Name');
+
+  const [recipients, setRecipients] = useState([]);
+  const [showRecipientSearch, setShowRecipientSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [assignedRecipient, setAssignedRecipient] = useState(selectedTool?.assignedRecipient || null);
+
+  useEffect(() => {
     if (selectedToolId) {
       console.log('RightPanel received selectedToolId:', selectedToolId, 'selectedTool:', selectedTool);
     }
   }, [selectedToolId, selectedTool]);
+
+  // Load recipients for this document
+  useEffect(() => {
+    if (isRecipientField && documentId) {
+      loadRecipients();
+    }
+  }, [isRecipientField, documentId]);
+
+  const loadRecipients = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/documents/${documentId}/recipients`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRecipients(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading recipients:', error);
+    }
+  };
+
+  const filteredRecipients = recipients.filter(r => 
+    r.recipientEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (r.recipientName && r.recipientName.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const handleAssignRecipient = (recipient) => {
+    setAssignedRecipient(recipient);
+    setShowRecipientSearch(false);
+    setSearchQuery('');
+    
+    // Update tool with recipient assignment
+    if (selectedTool) {
+      onUpdateToolStyle(selectedToolId, { 
+        assignedRecipient: {
+          _id: recipient._id,
+          recipientEmail: recipient.recipientEmail,
+          recipientName: recipient.recipientName,
+        }
+      });
+    }
+  };
+
+  const handleRemoveRecipient = () => {
+    setAssignedRecipient(null);
+    if (selectedTool) {
+      onUpdateToolStyle(selectedToolId, { assignedRecipient: null });
+    }
+  };
 
   const handleFontFamilyChange = (e) => {
     onUpdateToolStyle(selectedToolId, { fontFamily: e.target.value });
@@ -43,6 +108,89 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
       <div className="panel-content">
         {selectedTool ? (
           <div className="tool-properties">
+            {/* Recipient Assignment Section */}
+            {isRecipientField && (
+              <div className="recipient-assignment-section">
+                <div className="section-divider">Assign Recipient</div>
+                
+                {assignedRecipient ? (
+                  <div className="assigned-recipient">
+                    <div className="recipient-info">
+                      <div className="recipient-email">{assignedRecipient.recipientEmail}</div>
+                      {assignedRecipient.recipientName && (
+                        <div className="recipient-name">{assignedRecipient.recipientName}</div>
+                      )}
+                    </div>
+                    <button 
+                      className="remove-recipient-btn"
+                      onClick={handleRemoveRecipient}
+                      title="Remove recipient assignment"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="recipient-selector">
+                    {!showRecipientSearch ? (
+                      <button
+                        className="search-recipient-btn"
+                        onClick={() => setShowRecipientSearch(true)}
+                      >
+                        <Search size={16} />
+                        Search Recipients
+                      </button>
+                    ) : (
+                      <div className="recipient-search-box">
+                        <input
+                          type="text"
+                          placeholder="Search by email or name..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          autoFocus
+                          className="search-input"
+                        />
+                        
+                        {recipients.length === 0 ? (
+                          <div className="no-recipients-message">
+                            No recipients added yet. Add recipients in the document settings first.
+                          </div>
+                        ) : (
+                          <div className="recipient-list">
+                            {filteredRecipients.map((recipient) => (
+                              <button
+                                key={recipient._id}
+                                className="recipient-item"
+                                onClick={() => handleAssignRecipient(recipient)}
+                              >
+                                <div className="recipient-item-email">{recipient.recipientEmail}</div>
+                                {recipient.recipientName && (
+                                  <div className="recipient-item-name">{recipient.recipientName}</div>
+                                )}
+                              </button>
+                            ))}
+                            {filteredRecipients.length === 0 && (
+                              <div className="no-results-message">
+                                No recipients match your search
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <button
+                          className="close-search-btn"
+                          onClick={() => {
+                            setShowRecipientSearch(false);
+                            setSearchQuery('');
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {isTextField && (
               <div className="text-field-styles">
