@@ -1131,6 +1131,38 @@ app.get("/api/documents/:documentId/recipients", verifyToken, async (req, resp) 
     }
 });
 
+// Search for available emails by query (for recipient assignment)
+app.get("/api/emails/search", verifyToken, async (req, resp) => {
+    try {
+        const { q } = req.query;
+
+        if (!q || q.trim().length === 0) {
+            return resp.status(400).send({ message: "Search query is required" });
+        }
+
+        // Search for users by email
+        const users = await User.find({
+            email: { $regex: q, $options: 'i' } // Case-insensitive search
+        })
+        .select('email firstName lastName')
+        .limit(10); // Limit results to 10
+
+        const emails = users.map(user => ({
+            email: user.email,
+            name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : null,
+            userId: user._id,
+        }));
+
+        resp.status(200).send({
+            message: "Emails found",
+            data: emails,
+        });
+    } catch (error) {
+        console.error("Error searching emails:", error);
+        resp.status(500).send({ message: "Error searching emails", error: error.message });
+    }
+});
+
 // Get recipient by signature token (for public access during signing)
 app.get("/api/recipients/:signatureToken", async (req, resp) => {
     try {

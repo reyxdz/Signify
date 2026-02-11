@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trash2, Search, X } from 'lucide-react';
+import { Trash2, Search, X, Loader } from 'lucide-react';
 import './RightPanel.css';
 
 function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolStyle, documentId }) {
@@ -11,47 +11,61 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
     (selectedTool.tool.label === 'Recipient Signature' || selectedTool.tool.label === 'Recipient Initial' || 
      selectedTool.tool.label === 'Recipient Email' || selectedTool.tool.label === 'Recipient Full Name');
 
-  const [recipients, setRecipients] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
   const [showRecipientSearch, setShowRecipientSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredRecipients, setFilteredRecipients] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [assignedRecipient, setAssignedRecipient] = useState(selectedTool?.assignedRecipient || null);
   const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (selectedToolId) {
-      console.log('RightPanel received selectedToolId:', selectedToolId, 'selectedTool:', selectedTool);
+      console.log('RightPanel received selectedToolId:', selectedToolId);
     }
-  }, [selectedToolId, selectedTool]);
+  }, [selectedToolId]);
 
-  // Load recipients for this document
+  // Incremental email search with debouncing - searches database for available emails
   useEffect(() => {
-    if (isRecipientField && documentId) {
-      loadRecipients();
-    }
-  }, [isRecipientField, documentId]);
+    if (!isRecipientField) return;
 
-  // Incremental search with debouncing
-  useEffect(() => {
     // Clear existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
+    if (searchQuery.trim().length === 0) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
     // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
-      if (searchQuery.trim() === '') {
-        // If search is empty, show all recipients
-        setFilteredRecipients(recipients);
-      } else {
-        // Search by email (primary) or name (secondary)
-        const query = searchQuery.toLowerCase();
-        const filtered = recipients.filter(r => {
-          const emailMatch = r.recipientEmail.toLowerCase().includes(query);
-          const nameMatch = r.recipientName && r.recipientName.toLowerCase().includes(query);
-          return emailMatch || nameMatch;
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        console.log('Searching for:', searchQuery);
+        const response = await fetch(`http://localhost:5000/api/emails/search?q=${encodeURIComponent(searchQuery)}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         });
-        setFilteredRecipients(filtered);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Search results:', data.data);
+          setSearchResults(data.data || []);
+        } else {
+          console.error('Search failed:', response.status);
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error('Error searching emails:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
       }
     }, 300); // 300ms debounce
 
@@ -60,44 +74,22 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery, recipients]);
+  }, [searchQuery, isRecipientField]);
 
-  const loadRecipients = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/documents/${documentId}/recipients`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const recipientsList = data.data || [];
-        setRecipients(recipientsList);
-        setFilteredRecipients(recipientsList);
-      }
-    } catch (error) {
-      console.error('Error loading recipients:', error);
-    }
-  };
-
-  const handleAssignRecipient = (recipient) => {
+  const handleAssignRecipient = (emailResult) => {
+    const recipient = {
+      _id: emailResult.userId,
+      recipientEmail: emailResult.email,
+      recipientName: emailResult.name,
+    };
     setAssignedRecipient(recipient);
     setShowRecipientSearch(false);
     setSearchQuery('');
+    setSearchResults([]);
     
     // Update tool with recipient assignment
     if (selectedTool) {
-      onUpdateToolStyle(selectedToolId, { 
-        assignedRecipient: {
-          _id: recipient._id,
-          recipientEmail: recipient.recipientEmail,
-          recipientName: recipient.recipientName,
-        }
-      });
+      onUpdateToolStyle(selectedToolId, { assignedRecipient: recipient });
     }
   };
 
@@ -170,12 +162,14 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={() => setShowRecipientSearch(true)}
                         className="search-input"
+                        autoComplete="off"
                       />
                       {searchQuery && (
                         <button
                           className="clear-search-btn"
                           onClick={() => setSearchQuery('')}
                           title="Clear search"
+                          type="button"
                         >
                           <X size={16} />
                         </button>
@@ -184,34 +178,37 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
 
                     {showRecipientSearch && (
                       <div className="recipient-dropdown">
-                        {recipients.length === 0 ? (
-                          <div className="no-recipients-message">
-                            No recipients added yet. Add recipients in the document settings first.
+                        {isSearching && (
+                          <div className="searching-message">
+                            <Loader size={14} className="spinner" />
+                            Searching...
                           </div>
-                        ) : (
+                        )}
+
+                        {!isSearching && searchQuery.trim().length > 0 && (
                           <>
                             <div className="results-header">
-                              {filteredRecipients.length === 0 ? (
+                              {searchResults.length === 0 ? (
                                 <span className="results-count">No matches found</span>
                               ) : (
                                 <span className="results-count">
-                                  {filteredRecipients.length} recipient{filteredRecipients.length !== 1 ? 's' : ''} found
+                                  {searchResults.length} email{searchResults.length !== 1 ? 's' : ''} found
                                 </span>
                               )}
                             </div>
                             
-                            {filteredRecipients.length > 0 && (
+                            {searchResults.length > 0 && (
                               <div className="recipient-list">
-                                {filteredRecipients.map((recipient) => (
+                                {searchResults.map((emailResult) => (
                                   <button
-                                    key={recipient._id}
+                                    key={emailResult.userId}
                                     className="recipient-item"
-                                    onClick={() => handleAssignRecipient(recipient)}
+                                    onClick={() => handleAssignRecipient(emailResult)}
                                     type="button"
                                   >
-                                    <div className="recipient-item-email">{recipient.recipientEmail}</div>
-                                    {recipient.recipientName && (
-                                      <div className="recipient-item-name">{recipient.recipientName}</div>
+                                    <div className="recipient-item-email">{emailResult.email}</div>
+                                    {emailResult.name && (
+                                      <div className="recipient-item-name">{emailResult.name}</div>
                                     )}
                                   </button>
                                 ))}
@@ -220,15 +217,22 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
                           </>
                         )}
                         
+                        {!isSearching && searchQuery.trim().length === 0 && (
+                          <div className="search-placeholder">
+                            Type an email to search...
+                          </div>
+                        )}
+                        
                         <button
                           className="close-search-btn"
                           onClick={() => {
                             setShowRecipientSearch(false);
                             setSearchQuery('');
+                            setSearchResults([]);
                           }}
                           type="button"
                         >
-                          Cancel
+                          Close
                         </button>
                       </div>
                     )}
