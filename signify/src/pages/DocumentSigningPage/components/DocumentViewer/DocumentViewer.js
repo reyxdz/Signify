@@ -425,7 +425,19 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                               }}
                             />
                           ) : (
-                            <div className="dropped-tool-label">{item.tool.value || item.tool.label}</div>
+                            <div 
+                              className="dropped-tool-label"
+                              style={{
+                                fontFamily: item.fontFamily || 'Arial',
+                                fontSize: `${item.fontSize || 14}px`,
+                                color: item.fontColor || '#3b82f6',
+                                fontWeight: item.fontStyles?.bold ? 'bold' : 'normal',
+                                fontStyle: item.fontStyles?.italic ? 'italic' : 'normal',
+                                textDecoration: item.fontStyles?.underline ? 'underline' : 'none',
+                              }}
+                            >
+                              {item.tool.value || item.tool.label}
+                            </div>
                           )}
                           
                           {/* Resize handles - only for signature/initial images when selected */}

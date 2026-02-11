@@ -112,14 +112,20 @@
   justify-content: center;
   min-width: 120px;
   min-height: 40px;
-  background-color: #f0f9ff;
-  border: 2px dashed #3b82f6;
+  background-color: transparent;
+  border: none;
   border-radius: 4px;
   padding: 8px 12px;
   cursor: default;
   transition: all 0.2s ease;
   z-index: 10;
   pointer-events: none;
+  box-shadow: none;
+}
+
+.preview-tool-field:hover {
+  background-color: #f0f9ff;
+  border: 2px dashed #3b82f6;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
 }
 

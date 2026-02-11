@@ -117,6 +117,10 @@ function DocumentSigningPage() {
               label: item.tool.label,
               width: item.width,
               height: item.height,
+              fontFamily: item.fontFamily,
+              fontSize: item.fontSize,
+              fontColor: item.fontColor,
+              fontStyles: item.fontStyles,
             }))
           );
         }
@@ -150,6 +154,10 @@ function DocumentSigningPage() {
         label: item.tool.label,
         width: item.width,
         height: item.height,
+        fontFamily: item.fontFamily,
+        fontSize: item.fontSize,
+        fontColor: item.fontColor,
+        fontStyles: item.fontStyles,
       }))
     );
 
@@ -178,6 +186,10 @@ function DocumentSigningPage() {
           page: item.page,
           ...(item.width && { width: item.width }),
           ...(item.height && { height: item.height }),
+          ...(item.fontFamily && { fontFamily: item.fontFamily }),
+          ...(item.fontSize && { fontSize: item.fontSize }),
+          ...(item.fontColor && { fontColor: item.fontColor }),
+          ...(item.fontStyles && { fontStyles: item.fontStyles }),
         }));
         
         const response = await fetch(`http://localhost:5000/api/documents/${documentId}/tools`, {
@@ -226,6 +238,15 @@ function DocumentSigningPage() {
     console.log('Tools after deletion:', updatedTools.length, 'remaining');
     setDroppedTools(updatedTools);
     setSelectedToolId(null);
+  };
+
+  const handleUpdateToolStyle = (toolId, styleUpdates) => {
+    const updatedTools = droppedTools.map(tool => 
+      tool.id === toolId 
+        ? { ...tool, ...styleUpdates }
+        : tool
+    );
+    setDroppedTools(updatedTools);
   };
 
   const handlePreview = () => {
@@ -303,6 +324,7 @@ function DocumentSigningPage() {
           selectedToolId={selectedToolId}
           droppedTools={droppedTools}
           onDeleteTool={handleDeleteTool}
+          onUpdateToolStyle={handleUpdateToolStyle}
         />
       </div>
     </div>

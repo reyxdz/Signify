@@ -282,8 +282,8 @@
   justify-content: center;
   min-width: 120px;
   min-height: 40px;
-  background-color: #f0f9ff;
-  border: 2px dashed #3b82f6;
+  background-color: transparent;
+  border: none;
   border-radius: 4px;
   padding: 8px 12px;
   cursor: move;
@@ -291,55 +291,33 @@
   z-index: 10;
   user-select: none;
   touch-action: none;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+  box-shadow: none;
   outline: 1px solid transparent;
 }
 
 .dropped-tool:hover {
-  background-color: #e0f2fe;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  background-color: rgba(59, 130, 246, 0.05);
+  box-shadow: none;
 }
 
 .dropped-tool.selected {
-  background-color: #3b82f6;
-  border-color: #1d4ed8;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background-color: #f0f9ff;
+  border: 2px dashed #3b82f6;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.dropped-tool.selected:hover {
+  background-color: #e0f2fe;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .dropped-tool.selected .dropped-tool-label {
-  color: #ffffff;
+  color: #3b82f6;
 }
 
-/* Signature/Initial Image Styles - No design when not selected */
+/* Signature/Initial Image Styles - same design as all tools */
 .dropped-tool.signature-image {
-  background-color: transparent;
-  border: none;
-  padding: 0;
-  box-shadow: none;
-  outline: 1px solid transparent;
-  transition: all 0.2s ease;
-  overflow: visible;
-}
-
-.dropped-tool.signature-image:hover {
-  background-color: transparent;
-  box-shadow: none;
-  outline: 1px dashed rgba(59, 130, 246, 0.5);
-}
-
-/* When signature/initial is selected, show the design */
-.dropped-tool.signature-image.selected {
-  background-color: #f0f9ff;
-  border: 2px dashed #3b82f6;
-  padding: 8px 12px;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
-  outline: none;
-  overflow: visible;
-}
-
-.dropped-tool.signature-image.selected:hover {
-  background-color: #e0f2fe;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  /* Uses same styling as .dropped-tool */
 }
 
 /* Resize Handles */
