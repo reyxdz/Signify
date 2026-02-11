@@ -128,12 +128,31 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const handleResizeStart = (e, toolId, corner) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Find the tool and get its current dimensions
+    const tool = droppedToolsRef.current.find(t => t.id === toolId);
+    if (!tool) return;
+    
+    // Initialize width/height if not already set
+    const initialWidth = tool.width || 100;
+    const initialHeight = tool.height || 60;
+    
+    // Ensure tool has dimensions for consistency
+    if (!tool.width || !tool.height) {
+      const updatedTools = droppedToolsRef.current.map(t =>
+        t.id === toolId 
+          ? { ...t, width: initialWidth, height: initialHeight }
+          : t
+      );
+      updateTools(updatedTools);
+      droppedToolsRef.current = updatedTools;
+    }
+    
     resizeStartRef.current = {
       x: e.clientX,
       y: e.clientY,
       corner: corner,
       toolId: toolId,
-      tool: droppedToolsRef.current.find(t => t.id === toolId)
     };
     setIsResizing(true);
   };
