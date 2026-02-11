@@ -264,6 +264,12 @@ function DocumentSigningPage() {
       x: item.x,
       y: item.y,
       page: item.page,
+      ...(item.width && { width: item.width }),
+      ...(item.height && { height: item.height }),
+      ...(item.fontFamily && { fontFamily: item.fontFamily }),
+      ...(item.fontSize && { fontSize: item.fontSize }),
+      ...(item.fontColor && { fontColor: item.fontColor }),
+      ...(item.fontStyles && { fontStyles: item.fontStyles }),
     }));
 
     // Navigate to preview page with dropped tools data
