@@ -218,6 +218,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     
     // Check if it's a tool being dragged from dropped tools (via drag data)
     const droppedToolData = event.dataTransfer.getData('text/plain');
+    console.log('Drop event, droppedToolData:', droppedToolData, 'draggedToolId:', draggedToolId);
     
     // Get the PDF page element to validate drop area
     const pdfPage = wrapper.querySelector('.react-pdf__Page');
@@ -382,6 +383,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                             e.preventDefault();
                             return;
                           }
+                          console.log('Dragging tool:', item.id);
                           setDraggedToolId(item.id);
                           // Set drag data so we know it's from dropped tools
                           e.dataTransfer.effectAllowed = 'move';
