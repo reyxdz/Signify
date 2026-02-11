@@ -42,7 +42,9 @@ function LeftPanel() {
       id: 1, 
       icon: PenTool, 
       label: 'My Signature',
-      value: userData.signature || 'Signature here',
+      value: (typeof userData.signature === 'object' && userData.signature?.signature) 
+        ? userData.signature.signature 
+        : (userData.signature || 'Signature here'),
       placeholder: !userData.signature,
       className: 'tool-signature' 
     },
@@ -50,8 +52,10 @@ function LeftPanel() {
       id: 2, 
       icon: FileText, 
       label: 'My Initial',
-      value: userData.initial || 'Initial here',
-      placeholder: !userData.initial,
+      value: (typeof userData.signature === 'object' && userData.signature?.initials)
+        ? userData.signature.initials
+        : (userData.initial || 'Initial here'),
+      placeholder: !userData.signature,
       className: 'tool-initial' 
     },
     { 
