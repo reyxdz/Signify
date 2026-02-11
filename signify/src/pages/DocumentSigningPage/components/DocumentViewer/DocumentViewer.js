@@ -17,6 +17,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [draggedToolId, setDraggedToolId] = useState(null);
   const [resizingToolId, setResizingToolId] = useState(null);
   const [resizeStart, setResizeStart] = useState(null);
+  const resizingRef = useRef(false);
 
   // Sync from parent when parent tools change (from database or preview back)
   useEffect(() => {
@@ -37,6 +38,8 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   // Handle mouse down on resize handle
   const handleResizeMouseDown = (e, toolId) => {
     e.stopPropagation();
+    e.preventDefault();
+    resizingRef.current = true;
     setResizingToolId(toolId);
     setResizeStart({
       mouseX: e.clientX,
@@ -68,6 +71,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     const handleMouseUp = () => {
       setResizingToolId(null);
       setResizeStart(null);
+      resizingRef.current = false;
     };
 
     if (document) {
@@ -346,6 +350,10 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                         className="dropped-tool"
                         draggable
                         onDragStart={(e) => {
+                          if (resizingRef.current) {
+                            e.preventDefault();
+                            return;
+                          }
                           setDraggedToolId(item.id);
                         }}
                         onDragEnd={() => {
