@@ -15,6 +15,8 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [loading, setLoading] = useState(false);
   const [droppedTools, setDroppedTools] = useState(parentDroppedTools || []);
   const [draggedToolId, setDraggedToolId] = useState(null);
+  const [resizingToolId, setResizingToolId] = useState(null);
+  const [resizeStart, setResizeStart] = useState(null);
 
   // Sync from parent when parent tools change (from database or preview back)
   useEffect(() => {
@@ -31,6 +33,60 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       setParentDroppedTools(newTools);
     }
   };
+
+  // Handle mouse down on resize handle
+  const handleResizeMouseDown = (e, toolId) => {
+    e.stopPropagation();
+    setResizingToolId(toolId);
+    setResizeStart({
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      initialWidth: e.currentTarget.parentElement.offsetWidth,
+      initialHeight: e.currentTarget.parentElement.offsetHeight,
+    });
+  };
+
+  // Handle mouse move for resizing
+  useEffect(() => {
+    if (!resizingToolId || !resizeStart || typeof document === 'undefined') return;
+
+    const handleMouseMove = (e) => {
+      const deltaX = e.clientX - resizeStart.mouseX;
+      const deltaY = e.clientY - resizeStart.mouseY;
+      const newWidth = Math.max(80, resizeStart.initialWidth + deltaX);
+      const newHeight = Math.max(40, resizeStart.initialHeight + deltaY);
+
+      setDroppedTools((prevTools) =>
+        prevTools.map((tool) =>
+          tool.id === resizingToolId
+            ? { ...tool, width: newWidth, height: newHeight }
+            : tool
+        )
+      );
+    };
+
+    const handleMouseUp = () => {
+      setResizingToolId(null);
+      setResizeStart(null);
+    };
+
+    if (document) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [resizingToolId, resizeStart]);
+
+  // Sync with parent when tools change (including resizing)
+  useEffect(() => {
+    if (setParentDroppedTools && !resizingToolId) {
+      setParentDroppedTools(droppedTools);
+    }
+  }, [droppedTools, resizingToolId, setParentDroppedTools]);
 
   // Load PDF from file upload
   useEffect(() => {
@@ -280,27 +336,53 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                     <Page pageNumber={currentPage} scale={1.5} />
                   </Document>
                   {/* Only render tools after PDF has loaded successfully */}
-                  {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => (
-                    <div
-                      key={item.id}
-                      className="dropped-tool"
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggedToolId(item.id);
-                      }}
-                      onDragEnd={() => {
-                        setDraggedToolId(null);
-                      }}
-                      style={{
-                        position: 'absolute',
-                        left: `${item.x}px`,
-                        top: `${item.y}px`,
-                      }}
-                      onClick={() => updateTools(droppedTools.filter((t) => t.id !== item.id))}
-                    >
-                      <div className="dropped-tool-label">{item.tool.displayValue || item.tool.value || item.tool.label}</div>
-                    </div>
-                  ))}
+                  {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => {
+                    // Check if this is a signature/initial image (base64 data starts with 'data:image')
+                    const isImage = typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
+                    
+                    return (
+                      <div
+                        key={item.id}
+                        className="dropped-tool"
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedToolId(item.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedToolId(null);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          left: `${item.x}px`,
+                          top: `${item.y}px`,
+                          width: item.width ? `${item.width}px` : '120px',
+                          height: item.height ? `${item.height}px` : '40px',
+                        }}
+                        onClick={() => updateTools(droppedTools.filter((t) => t.id !== item.id))}
+                      >
+                        {isImage ? (
+                          <img 
+                            src={item.tool.value} 
+                            alt={item.tool.label}
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: '100%',
+                              objectFit: 'contain',
+                              pointerEvents: 'none',
+                            }}
+                          />
+                        ) : (
+                          <div className="dropped-tool-label">{item.tool.value || item.tool.label}</div>
+                        )}
+                        {/* Resize handle - bottom-right corner */}
+                        <div
+                          className="resize-handle"
+                          onMouseDown={(e) => handleResizeMouseDown(e, item.id)}
+                          title="Drag to resize"
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {numPages && numPages > 1 && (

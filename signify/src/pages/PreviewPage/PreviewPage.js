@@ -189,23 +189,40 @@ function PreviewPage() {
             <Page pageNumber={currentPage} scale={1.5} />
           </Document>
           {/* Display dropped tools as read-only fields - only after PDF loads */}
-          {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => (
-            <div
-              key={item.id}
-              className="preview-tool-field"
-              style={{
-                position: 'absolute',
-                left: `${item.x}px`,
-                top: `${item.y}px`,
-              }}
-              title={`${item.tool.label} - Required from: [Other parties]`}
-            >
-              <div className="preview-tool-content">
-                <span className="preview-tool-type">{item.tool.label}</span>
-                <span className="preview-tool-value">{item.tool.displayValue || item.tool.value}</span>
+          {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => {
+            // Check if this is a signature/initial image (base64 data starts with 'data:image')
+            const isImage = typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
+            
+            return (
+              <div
+                key={item.id}
+                className="preview-tool-field"
+                style={{
+                  position: 'absolute',
+                  left: `${item.x}px`,
+                  top: `${item.y}px`,
+                }}
+                title={`${item.tool.label} - Required from: [Other parties]`}
+              >
+                {isImage ? (
+                  <img 
+                    src={item.tool.value} 
+                    alt={item.tool.label}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      objectFit: 'contain'
+                    }}
+                  />
+                ) : (
+                  <div className="preview-tool-content">
+                    <span className="preview-tool-type">{item.tool.label}</span>
+                    <span className="preview-tool-value">{item.tool.value}</span>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {numPages && numPages > 1 && (

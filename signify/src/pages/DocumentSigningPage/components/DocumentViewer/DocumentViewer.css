@@ -292,11 +292,37 @@
   user-select: none;
   touch-action: none;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+  position: relative;
 }
 
 .dropped-tool:hover {
   background-color: #e0f2fe;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.dropped-tool:hover .resize-handle {
+  opacity: 1;
+}
+
+.resize-handle {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  background-color: #3b82f6;
+  border: 2px solid #ffffff;
+  border-radius: 2px;
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
+}
+
+.resize-handle:hover {
+  background-color: #2563eb;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
 }
 
 .dropped-tool-label {
