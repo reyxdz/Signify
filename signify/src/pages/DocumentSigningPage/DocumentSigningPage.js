@@ -12,6 +12,10 @@ const ICON_MAP = {
   'My Initial': FileText,
   'My Email': Mail,
   'My Full Name': User,
+  'Recipient Signature': PenTool,
+  'Recipient Initial': FileText,
+  'Recipient Email': Mail,
+  'Recipient Full Name': User,
 };
 
 function DocumentSigningPage() {
@@ -90,8 +94,9 @@ function DocumentSigningPage() {
         if (data.tools && data.tools.length > 0) {
           // Reconstruct tools with icons since icons can't be stored in database
           const reconstructedTools = data.tools.map(item => {
-            // Initialize dimensions for signature/initial images if not set
+            // Initialize dimensions for signature/initial images and recipient signature/initial if not set
             const isSignatureImage = item.tool.label === 'My Signature' || item.tool.label === 'My Initial';
+            const isRecipientSignature = item.tool.label === 'Recipient Signature' || item.tool.label === 'Recipient Initial';
             return {
               ...item,
               tool: {
@@ -99,9 +104,11 @@ function DocumentSigningPage() {
                 // Add icon back based on label
                 icon: ICON_MAP[item.tool.label],
               },
-              // Set default dimensions for signature images if not already set
+              // Set default dimensions if not already set
               ...(isSignatureImage && !item.width && { width: 120 }),
               ...(isSignatureImage && !item.height && { height: 80 }),
+              ...(isRecipientSignature && !item.width && { width: 150 }),
+              ...(isRecipientSignature && !item.height && { height: 60 }),
             };
           });
           

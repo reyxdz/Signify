@@ -280,10 +280,12 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       if (toolData) {
         const tool = JSON.parse(toolData);
         
-        // Check if this is a signature/initial image tool
+        // Check if this is a signature/initial image tool or recipient signature/initial
         const isSignatureImage = tool.label === 'My Signature' || tool.label === 'My Initial';
-        const initialWidth = isSignatureImage ? 120 : undefined;
-        const initialHeight = isSignatureImage ? 80 : undefined;
+        const isRecipientSignature = tool.label === 'Recipient Signature' || tool.label === 'Recipient Initial';
+        
+        const initialWidth = isSignatureImage ? 120 : (isRecipientSignature ? 150 : undefined);
+        const initialHeight = isSignatureImage ? 80 : (isRecipientSignature ? 60 : undefined);
         
         const newTools = [
           ...droppedTools,
@@ -293,7 +295,8 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
             x: x,
             y: y,
             page: currentPage,
-            ...(isSignatureImage && { width: initialWidth, height: initialHeight }),
+            ...(initialWidth && { width: initialWidth }),
+            ...(initialHeight && { height: initialHeight }),
           },
         ];
         updateTools(newTools);
@@ -378,6 +381,8 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                     return toolsOnCurrentPage.map((item) => {
                       // Check if this is a signature/initial image (base64 data starts with 'data:image')
                       const isImage = typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
+                      const isRecipientSignature = item.tool.label === 'Recipient Signature' || item.tool.label === 'Recipient Initial';
+                      
                       if (item.tool.label === 'My Signature' || item.tool.label === 'My Initial') {
                         console.log('Rendering signature field:', { 
                           label: item.tool.label, 
@@ -392,7 +397,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                         <div
                           key={item.id}
                           data-tool-id={item.id}
-                          className={`dropped-tool ${isImage ? 'signature-image' : ''} ${selectedToolId === item.id ? 'selected' : ''}`}
+                          className={`dropped-tool ${isImage ? 'signature-image' : ''} ${isRecipientSignature ? 'recipient-signature-field' : ''} ${selectedToolId === item.id ? 'selected' : ''}`}
                           draggable
                           onDragStart={(e) => {
                             setDraggedToolId(item.id);
@@ -408,8 +413,8 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                             position: 'absolute',
                             left: `${item.x}px`,
                             top: `${item.y}px`,
-                            width: isImage && item.width ? `${item.width}px` : 'auto',
-                            height: isImage && item.height ? `${item.height}px` : 'auto',
+                            width: (isImage || isRecipientSignature) && item.width ? `${item.width}px` : 'auto',
+                            height: (isImage || isRecipientSignature) && item.height ? `${item.height}px` : 'auto',
                           }}
                         >
                           {isImage ? (
@@ -424,6 +429,10 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                                 height: '100%'
                               }}
                             />
+                          ) : isRecipientSignature ? (
+                            <div className="recipient-signature-placeholder">
+                              {item.tool.label}
+                            </div>
                           ) : (
                             <div 
                               className="dropped-tool-label"

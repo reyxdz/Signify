@@ -12,6 +12,10 @@ const ICON_MAP = {
   'My Initial': FileText,
   'My Email': Mail,
   'My Full Name': User,
+  'Recipient Signature': PenTool,
+  'Recipient Initial': FileText,
+  'Recipient Email': Mail,
+  'Recipient Full Name': User,
 };
 
 function PreviewPage() {
@@ -192,17 +196,18 @@ function PreviewPage() {
           {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => {
             // Check if this is a signature/initial image (base64 data starts with 'data:image')
             const isImage = typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
+            const isRecipientSignature = item.tool.label === 'Recipient Signature' || item.tool.label === 'Recipient Initial';
             
             return (
               <div
                 key={item.id}
-                className="preview-tool-field"
+                className={`preview-tool-field ${isRecipientSignature ? 'recipient-signature-field' : ''}`}
                 style={{
                   position: 'absolute',
                   left: `${item.x}px`,
                   top: `${item.y}px`,
-                  width: isImage && item.width ? `${item.width}px` : 'auto',
-                  height: isImage && item.height ? `${item.height}px` : 'auto',
+                  width: (isImage || isRecipientSignature) && item.width ? `${item.width}px` : 'auto',
+                  height: (isImage || isRecipientSignature) && item.height ? `${item.height}px` : 'auto',
                 }}
                 title={`${item.tool.label} - Required from: [Other parties]`}
               >
@@ -218,6 +223,10 @@ function PreviewPage() {
                       objectFit: 'contain'
                     }}
                   />
+                ) : isRecipientSignature ? (
+                  <div className="recipient-signature-placeholder">
+                    {item.tool.label}
+                  </div>
                 ) : (
                   <div className="preview-tool-content">
                     <span 
