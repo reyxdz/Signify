@@ -42,32 +42,32 @@ function LeftPanel() {
       id: 1, 
       icon: PenTool, 
       label: 'My Signature',
-      value: 'Signature here',
-      placeholder: true,
+      value: userData.signature || 'Signature here',
+      placeholder: !userData.signature,
       className: 'tool-signature' 
     },
     { 
       id: 2, 
       icon: FileText, 
       label: 'My Initial',
-      value: 'Initial here',
-      placeholder: true,
+      value: userData.initial || 'Initial here',
+      placeholder: !userData.initial,
       className: 'tool-initial' 
     },
     { 
       id: 3, 
       icon: Mail, 
       label: 'My Email',
-      value: 'Email here',
-      placeholder: true,
+      value: userData.email || 'Email here',
+      placeholder: !userData.email,
       className: 'tool-email' 
     },
     { 
       id: 4, 
       icon: User, 
       label: 'My Full Name',
-      value: 'Name here',
-      placeholder: true,
+      value: (userData.firstName && userData.lastName) ? `${userData.firstName} ${userData.lastName}` : (userData.fullName || 'Name here'),
+      placeholder: !(userData.firstName && userData.lastName) && !userData.fullName,
       className: 'tool-fullname' 
     },
   ] : [];
