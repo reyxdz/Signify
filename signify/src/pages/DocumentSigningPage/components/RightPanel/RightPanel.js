@@ -161,43 +161,35 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
                   </div>
                 ) : (
                   <div className="recipient-selector">
-                    {!showRecipientSearch ? (
-                      <button
-                        className="search-recipient-btn"
-                        onClick={() => setShowRecipientSearch(true)}
-                      >
-                        <Search size={16} />
-                        Search Recipients
-                      </button>
-                    ) : (
-                      <div className="recipient-search-box">
-                        <div className="search-input-wrapper">
-                          <Search size={16} className="search-icon" />
-                          <input
-                            type="text"
-                            placeholder="Search emails..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            autoFocus
-                            className="search-input"
-                          />
-                          {searchQuery && (
-                            <button
-                              className="clear-search-btn"
-                              onClick={() => setSearchQuery('')}
-                              title="Clear search"
-                            >
-                              <X size={16} />
-                            </button>
-                          )}
-                        </div>
-                        
+                    <div className="search-input-wrapper">
+                      <Search size={16} className="search-icon" />
+                      <input
+                        type="text"
+                        placeholder="Search emails..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onFocus={() => setShowRecipientSearch(true)}
+                        className="search-input"
+                      />
+                      {searchQuery && (
+                        <button
+                          className="clear-search-btn"
+                          onClick={() => setSearchQuery('')}
+                          title="Clear search"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    {showRecipientSearch && (
+                      <div className="recipient-dropdown">
                         {recipients.length === 0 ? (
                           <div className="no-recipients-message">
                             No recipients added yet. Add recipients in the document settings first.
                           </div>
                         ) : (
-                          <div className="recipient-search-results">
+                          <>
                             <div className="results-header">
                               {filteredRecipients.length === 0 ? (
                                 <span className="results-count">No matches found</span>
@@ -208,22 +200,24 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
                               )}
                             </div>
                             
-                            <div className="recipient-list">
-                              {filteredRecipients.map((recipient) => (
-                                <button
-                                  key={recipient._id}
-                                  className="recipient-item"
-                                  onClick={() => handleAssignRecipient(recipient)}
-                                  title={`Assign ${recipient.recipientEmail}`}
-                                >
-                                  <div className="recipient-item-email">{recipient.recipientEmail}</div>
-                                  {recipient.recipientName && (
-                                    <div className="recipient-item-name">{recipient.recipientName}</div>
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                            {filteredRecipients.length > 0 && (
+                              <div className="recipient-list">
+                                {filteredRecipients.map((recipient) => (
+                                  <button
+                                    key={recipient._id}
+                                    className="recipient-item"
+                                    onClick={() => handleAssignRecipient(recipient)}
+                                    type="button"
+                                  >
+                                    <div className="recipient-item-email">{recipient.recipientEmail}</div>
+                                    {recipient.recipientName && (
+                                      <div className="recipient-item-name">{recipient.recipientName}</div>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
                         )}
                         
                         <button
@@ -232,6 +226,7 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
                             setShowRecipientSearch(false);
                             setSearchQuery('');
                           }}
+                          type="button"
                         >
                           Cancel
                         </button>
