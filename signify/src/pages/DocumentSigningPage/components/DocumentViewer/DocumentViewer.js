@@ -129,21 +129,30 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     e.preventDefault();
     e.stopPropagation();
     
-    // Find the tool element to get its actual rendered dimensions
-    const toolElement = document.querySelector(`[data-tool-id="${toolId}"]`);
-    let actualWidth = 100;
-    let actualHeight = 60;
+    // Find the tool in state
+    const tool = droppedToolsRef.current.find(t => t.id === toolId);
+    if (!tool) return;
     
-    if (toolElement) {
-      // Get the actual rendered size from the DOM
-      const rect = toolElement.getBoundingClientRect();
-      actualWidth = rect.width;
-      actualHeight = rect.height;
+    let actualWidth = tool.width || 100;
+    let actualHeight = tool.height || 60;
+    
+    // Try to measure actual rendered dimensions from the DOM element
+    try {
+      const toolElement = document?.querySelector?.(`[data-tool-id="${toolId}"]`);
+      if (toolElement) {
+        const rect = toolElement.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          actualWidth = rect.width;
+          actualHeight = rect.height;
+        }
+      }
+    } catch (error) {
+      console.warn('Could not measure tool element dimensions:', error);
+      // Fall back to existing dimensions or defaults
     }
     
-    // Find the tool and initialize dimensions if needed
-    const tool = droppedToolsRef.current.find(t => t.id === toolId);
-    if (tool && (!tool.width || !tool.height)) {
+    // Initialize width/height if not already set
+    if (!tool.width || !tool.height) {
       const updatedTools = droppedToolsRef.current.map(t =>
         t.id === toolId 
           ? { ...t, width: actualWidth, height: actualHeight }
