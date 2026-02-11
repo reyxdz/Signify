@@ -229,10 +229,19 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     const pageRight = pageLeft + pageRect.width;
     const pageBottom = pageTop + pageRect.height;
     
-    // Account for tool dimensions (min-width: 120px, min-height: 40px + padding: 8px 12px on all sides)
-    // Total: 120 + 24 (left+right padding) = 144px width, 40 + 16 (top+bottom padding) = 56px height
-    const toolWidth = 144;
-    const toolHeight = 56;
+    // Account for tool dimensions - get from the tool being dragged if available
+    let toolWidth = 144;
+    let toolHeight = 56;
+    
+    // If we have the dragged tool ID, get its actual dimensions
+    if (droppedToolData && droppedToolData.startsWith('dropped-')) {
+      const toolId = droppedToolData.replace('dropped-', '');
+      const draggedTool = droppedTools.find(t => t.id === toolId);
+      if (draggedTool) {
+        toolWidth = draggedTool.width || 120;
+        toolHeight = draggedTool.height || 40;
+      }
+    }
     
     // Check if drop + tool dimensions would be within page boundaries
     const isWithinPage = x >= pageLeft && (x + toolWidth) <= pageRight && y >= pageTop && (y + toolHeight) <= pageBottom;
@@ -242,8 +251,20 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       console.log('Drop outside page - ignoring');
       return; // Ignore drops outside the page
     }
-    
-    // Check if it's a tool being dragged from dropped tools
+
+    // Check if it's a tool being dragged from dropped tools (via drag data)
+    const droppedToolData = event.dataTransfer.getData('text/plain');
+    if (droppedToolData && droppedToolData.startsWith('dropped-')) {
+      const toolId = droppedToolData.replace('dropped-', '');
+      const updatedTools = droppedTools.map((tool) =>
+        tool.id === toolId ? { ...tool, x, y } : tool
+      );
+      updateTools(updatedTools);
+      setDraggedToolId(null);
+      return;
+    }
+
+    // Fallback check for draggedToolId state (for compatibility)
     if (draggedToolId) {
       const updatedTools = droppedTools.map((tool) =>
         tool.id === draggedToolId ? { ...tool, x, y } : tool
