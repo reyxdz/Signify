@@ -201,6 +201,8 @@ function PreviewPage() {
                   position: 'absolute',
                   left: `${item.x}px`,
                   top: `${item.y}px`,
+                  width: isImage && item.width ? `${item.width}px` : 'auto',
+                  height: isImage && item.height ? `${item.height}px` : 'auto',
                 }}
                 title={`${item.tool.label} - Required from: [Other parties]`}
               >
@@ -211,6 +213,8 @@ function PreviewPage() {
                     style={{
                       maxWidth: '100%',
                       maxHeight: '100%',
+                      width: item.width ? '100%' : 'auto',
+                      height: item.height ? '100%' : 'auto',
                       objectFit: 'contain'
                     }}
                   />
