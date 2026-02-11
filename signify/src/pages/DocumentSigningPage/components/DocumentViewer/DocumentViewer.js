@@ -18,12 +18,21 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [resizingToolId, setResizingToolId] = useState(null);
   const [resizeStart, setResizeStart] = useState(null);
   const resizingRef = useRef(false);
+  const lastSyncTimeRef = useRef(0);
 
   // Sync from parent when parent tools change (from database or preview back)
   useEffect(() => {
     if (parentDroppedTools && parentDroppedTools.length > 0) {
-      console.log('DocumentViewer: Syncing parent tools:', parentDroppedTools);
-      setDroppedTools(parentDroppedTools);
+      // Check if this is a fresh load from database or a sync back from parent after our update
+      const now = Date.now();
+      // Only sync if more than 500ms has passed since last sync (to avoid rapid resets from loadToolsFromDatabase)
+      if (now - lastSyncTimeRef.current > 500) {
+        console.log('DocumentViewer: Syncing parent tools:', parentDroppedTools);
+        setDroppedTools(parentDroppedTools);
+        lastSyncTimeRef.current = now;
+      } else {
+        console.log('DocumentViewer: Skipping sync (too soon, likely database reload)');
+      }
     }
   }, [parentDroppedTools]);
 
