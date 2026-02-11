@@ -13,21 +13,19 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [droppedTools, setDroppedTools] = useState(parentDroppedTools || []);
+  const [droppedTools, setDroppedTools] = useState([]);
+  const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
   const [draggedToolId, setDraggedToolId] = useState(null);
   const [resizingToolId, setResizingToolId] = useState(null);
   const [resizeStart, setResizeStart] = useState(null);
   const resizingRef = useRef(false);
-  const lastSyncTimeRef = useRef(0);
 
-  // Sync from parent when parent tools change (from database or preview back)
-  // Only sync on INITIAL LOAD, not on every parent update to avoid overwriting local changes
+  // Sync from parent ONLY on very first mount (when parentDroppedTools arrives)
   useEffect(() => {
-    if (parentDroppedTools && parentDroppedTools.length > 0 && droppedTools.length === 0) {
-      // Only sync if local tools are empty (initial load scenario)
-      console.log('DocumentViewer: Initial sync from parent tools:', parentDroppedTools);
+    if (!isInitialLoadDone && parentDroppedTools && parentDroppedTools.length > 0 && droppedTools.length === 0) {
+      console.log('DocumentViewer: Initial load from parent:', parentDroppedTools);
       setDroppedTools(parentDroppedTools);
-      lastSyncTimeRef.current = Date.now();
+      setIsInitialLoadDone(true);
     }
   }, []);
 
@@ -222,7 +220,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     
     // Check if it's a tool being dragged from dropped tools (via drag data)
     const droppedToolData = event.dataTransfer.getData('text/plain');
-    console.log('Drop event, droppedToolData:', droppedToolData, 'draggedToolId:', draggedToolId);
     
     // Get the PDF page element to validate drop area
     const pdfPage = wrapper.querySelector('.react-pdf__Page');
@@ -253,7 +250,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     
     // Check if drop + tool dimensions would be within page boundaries
     const isWithinPage = x >= pageLeft && (x + toolWidth) <= pageRight && y >= pageTop && (y + toolHeight) <= pageBottom;
-    console.log('Drop position:', { x, y }, 'Tool size:', { toolWidth, toolHeight }, 'Page bounds:', { pageLeft, pageTop, pageRight, pageBottom }, 'Within page:', isWithinPage);
     
     if (!isWithinPage) {
       console.log('Drop outside page - ignoring');
@@ -263,11 +259,9 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     // If it's a tool being dragged from dropped tools (via drag data)
     if (droppedToolData && droppedToolData.startsWith('dropped-')) {
       const toolId = droppedToolData.replace('dropped-', '');
-      console.log('Updating tool position - toolId:', toolId, 'new position:', {x, y});
       const updatedTools = droppedTools.map((tool) =>
         tool.id === toolId ? { ...tool, x, y } : tool
       );
-      console.log('Updated tools:', updatedTools);
       updateTools(updatedTools);
       setDraggedToolId(null);
       return;
@@ -378,7 +372,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                   {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => {
                     // Check if this is a signature/initial image (base64 data starts with 'data:image')
                     const isImage = typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
-                    console.log('Rendering tool:', item.id, 'at position:', {x: item.x, y: item.y});
                     
                     return (
                       <div
@@ -390,7 +383,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                             e.preventDefault();
                             return;
                           }
-                          console.log('Dragging tool:', item.id);
                           setDraggedToolId(item.id);
                           // Set drag data so we know it's from dropped tools
                           e.dataTransfer.effectAllowed = 'move';
