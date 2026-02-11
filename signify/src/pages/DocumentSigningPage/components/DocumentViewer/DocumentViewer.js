@@ -366,7 +366,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                           width: item.width ? `${item.width}px` : '120px',
                           height: item.height ? `${item.height}px` : '40px',
                         }}
-                        onClick={() => updateTools(droppedTools.filter((t) => t.id !== item.id))}
                       >
                         {isImage ? (
                           <img 
