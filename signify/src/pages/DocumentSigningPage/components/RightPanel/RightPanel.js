@@ -43,18 +43,6 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
       <div className="panel-content">
         {selectedTool ? (
           <div className="tool-properties">
-            <div className="property-item">
-              <label>Field Name</label>
-              <p>{selectedTool.tool.label}</p>
-            </div>
-            <div className="property-item">
-              <label>Type</label>
-              <p>{selectedTool.tool.id}</p>
-            </div>
-            <div className="property-item">
-              <label>Position</label>
-              <p>Page {selectedTool.page} • X: {Math.round(selectedTool.x)}px, Y: {Math.round(selectedTool.y)}px</p>
-            </div>
 
             {isTextField && (
               <div className="text-field-styles">
@@ -69,7 +57,6 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
                     className="style-select"
                   >
                     <option value="Arial">Arial</option>
-                    <option value="Helvetica">Helvetica</option>
                     <option value="Times New Roman">Times New Roman</option>
                     <option value="Courier New">Courier New</option>
                     <option value="Georgia">Georgia</option>
