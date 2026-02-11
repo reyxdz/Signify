@@ -129,39 +129,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     e.preventDefault();
     e.stopPropagation();
     
-    // Find the tool in state
-    const tool = droppedToolsRef.current.find(t => t.id === toolId);
-    if (!tool) return;
-    
-    let actualWidth = tool.width || 100;
-    let actualHeight = tool.height || 60;
-    
-    // Try to measure actual rendered dimensions from the DOM element
-    try {
-      const toolElement = document?.querySelector?.(`[data-tool-id="${toolId}"]`);
-      if (toolElement) {
-        const rect = toolElement.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          actualWidth = rect.width;
-          actualHeight = rect.height;
-        }
-      }
-    } catch (error) {
-      console.warn('Could not measure tool element dimensions:', error);
-      // Fall back to existing dimensions or defaults
-    }
-    
-    // Initialize width/height if not already set
-    if (!tool.width || !tool.height) {
-      const updatedTools = droppedToolsRef.current.map(t =>
-        t.id === toolId 
-          ? { ...t, width: actualWidth, height: actualHeight }
-          : t
-      );
-      updateTools(updatedTools);
-      droppedToolsRef.current = updatedTools;
-    }
-    
     resizeStartRef.current = {
       x: e.clientX,
       y: e.clientY,
@@ -313,6 +280,11 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
       if (toolData) {
         const tool = JSON.parse(toolData);
         
+        // Check if this is a signature/initial image tool
+        const isSignatureImage = tool.label === 'My Signature' || tool.label === 'My Initial';
+        const initialWidth = isSignatureImage ? 120 : undefined;
+        const initialHeight = isSignatureImage ? 80 : undefined;
+        
         const newTools = [
           ...droppedTools,
           {
@@ -321,6 +293,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
             x: x,
             y: y,
             page: currentPage,
+            ...(isSignatureImage && { width: initialWidth, height: initialHeight }),
           },
         ];
         updateTools(newTools);
