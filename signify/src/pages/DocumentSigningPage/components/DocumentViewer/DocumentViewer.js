@@ -22,12 +22,12 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
 
   // Sync from parent ONLY on very first mount (when parentDroppedTools arrives)
   useEffect(() => {
-    if (!isInitialLoadDone && parentDroppedTools && parentDroppedTools.length > 0 && droppedTools.length === 0) {
+    if (!isInitialLoadDone && parentDroppedTools && parentDroppedTools.length > 0) {
       console.log('DocumentViewer: Initial load from parent:', parentDroppedTools);
       setDroppedTools(parentDroppedTools);
       setIsInitialLoadDone(true);
     }
-  }, []);
+  }, [parentDroppedTools, isInitialLoadDone]);
 
   // Helper function to update tools in both local and parent state
   const updateTools = (newTools) => {
