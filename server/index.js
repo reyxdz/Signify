@@ -351,9 +351,9 @@ DocumentToolSchema.index({ documentId: 1 });
 DocumentToolSchema.index({ documentId: 1, toolId: 1 });
 DocumentToolSchema.index({ assignedToRecipientId: 1 });
 
-const DocumentTool = mongoose.model('documentTools', DocumentToolSchema);
+const DocumentTool = mongoose.model('documentTool', DocumentToolSchema);
 
-// Legacy DocumentTools schema for backward compatibility
+// Legacy DocumentTools schema for backward compatibility (stores all tools as array)
 const DocumentToolsSchema = new mongoose.Schema({
     documentId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -380,7 +380,7 @@ const DocumentToolsSchema = new mongoose.Schema({
     },
 });
 
-const DocumentTools = mongoose.model('documentTools', DocumentToolsSchema);
+const DocumentTools = mongoose.model('documentToolsLegacy', DocumentToolsSchema);
 
 // Schema for activity log
 const ActivitySchema = new mongoose.Schema({

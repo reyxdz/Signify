@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Trash2, Search, X } from 'lucide-react';
 import './RightPanel.css';
 
@@ -14,7 +14,9 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
   const [recipients, setRecipients] = useState([]);
   const [showRecipientSearch, setShowRecipientSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filteredRecipients, setFilteredRecipients] = useState([]);
   const [assignedRecipient, setAssignedRecipient] = useState(selectedTool?.assignedRecipient || null);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (selectedToolId) {
@@ -29,6 +31,37 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
     }
   }, [isRecipientField, documentId]);
 
+  // Incremental search with debouncing
+  useEffect(() => {
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      if (searchQuery.trim() === '') {
+        // If search is empty, show all recipients
+        setFilteredRecipients(recipients);
+      } else {
+        // Search by email (primary) or name (secondary)
+        const query = searchQuery.toLowerCase();
+        const filtered = recipients.filter(r => {
+          const emailMatch = r.recipientEmail.toLowerCase().includes(query);
+          const nameMatch = r.recipientName && r.recipientName.toLowerCase().includes(query);
+          return emailMatch || nameMatch;
+        });
+        setFilteredRecipients(filtered);
+      }
+    }, 300); // 300ms debounce
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, recipients]);
+
   const loadRecipients = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -42,17 +75,14 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
 
       if (response.ok) {
         const data = await response.json();
-        setRecipients(data.data || []);
+        const recipientsList = data.data || [];
+        setRecipients(recipientsList);
+        setFilteredRecipients(recipientsList);
       }
     } catch (error) {
       console.error('Error loading recipients:', error);
     }
   };
-
-  const filteredRecipients = recipients.filter(r => 
-    r.recipientEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (r.recipientName && r.recipientName.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   const handleAssignRecipient = (recipient) => {
     setAssignedRecipient(recipient);
@@ -141,38 +171,58 @@ function RightPanel({ selectedToolId, droppedTools, onDeleteTool, onUpdateToolSt
                       </button>
                     ) : (
                       <div className="recipient-search-box">
-                        <input
-                          type="text"
-                          placeholder="Search by email or name..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          autoFocus
-                          className="search-input"
-                        />
+                        <div className="search-input-wrapper">
+                          <Search size={16} className="search-icon" />
+                          <input
+                            type="text"
+                            placeholder="Search emails..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            autoFocus
+                            className="search-input"
+                          />
+                          {searchQuery && (
+                            <button
+                              className="clear-search-btn"
+                              onClick={() => setSearchQuery('')}
+                              title="Clear search"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
                         
                         {recipients.length === 0 ? (
                           <div className="no-recipients-message">
                             No recipients added yet. Add recipients in the document settings first.
                           </div>
                         ) : (
-                          <div className="recipient-list">
-                            {filteredRecipients.map((recipient) => (
-                              <button
-                                key={recipient._id}
-                                className="recipient-item"
-                                onClick={() => handleAssignRecipient(recipient)}
-                              >
-                                <div className="recipient-item-email">{recipient.recipientEmail}</div>
-                                {recipient.recipientName && (
-                                  <div className="recipient-item-name">{recipient.recipientName}</div>
-                                )}
-                              </button>
-                            ))}
-                            {filteredRecipients.length === 0 && (
-                              <div className="no-results-message">
-                                No recipients match your search
-                              </div>
-                            )}
+                          <div className="recipient-search-results">
+                            <div className="results-header">
+                              {filteredRecipients.length === 0 ? (
+                                <span className="results-count">No matches found</span>
+                              ) : (
+                                <span className="results-count">
+                                  {filteredRecipients.length} recipient{filteredRecipients.length !== 1 ? 's' : ''} found
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="recipient-list">
+                              {filteredRecipients.map((recipient) => (
+                                <button
+                                  key={recipient._id}
+                                  className="recipient-item"
+                                  onClick={() => handleAssignRecipient(recipient)}
+                                  title={`Assign ${recipient.recipientEmail}`}
+                                >
+                                  <div className="recipient-item-email">{recipient.recipientEmail}</div>
+                                  {recipient.recipientName && (
+                                    <div className="recipient-item-name">{recipient.recipientName}</div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         )}
                         
