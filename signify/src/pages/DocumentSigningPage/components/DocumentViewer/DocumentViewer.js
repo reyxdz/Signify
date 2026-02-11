@@ -1,102 +1,31 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Document, Page } from 'react-pdf';
 import { Upload, ChevronUp, ChevronDown } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import './DocumentViewer.css';
 
-function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload, droppedTools: parentDroppedTools, setDroppedTools: setParentDroppedTools }) {
+function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload, droppedTools: parentDroppedTools, setDroppedTools: setParentDroppedTools, selectedToolId, setSelectedToolId }) {
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
   const wrapperRef = useRef(null);
+  const resizeStartRef = useRef(null);
+  const droppedToolsRef = useRef(parentDroppedTools || []);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [droppedTools, setDroppedTools] = useState(() => parentDroppedTools || []);
   const [draggedToolId, setDraggedToolId] = useState(null);
-  const [resizingToolId, setResizingToolId] = useState(null);
-  const [resizeStart, setResizeStart] = useState(null);
-  const resizingRef = useRef(false);
+  const [isResizing, setIsResizing] = useState(false);
 
-  // Sync from parent when tools change, but not while dragging/resizing
+  // Use parent tools directly instead of local state
+  const droppedTools = parentDroppedTools || [];
+  const updateTools = setParentDroppedTools;
+
+  // Keep droppedTools in ref for use in event listeners
   useEffect(() => {
-    if (parentDroppedTools && parentDroppedTools.length > 0 && !draggedToolId && !resizingToolId) {
-      // Only sync if parent has tools and we're not actively dragging/resizing
-      setDroppedTools(parentDroppedTools);
-    }
-  }, [parentDroppedTools, draggedToolId, resizingToolId]);
-
-
-  // Helper function to update tools in both local and parent state
-  const updateTools = (newTools) => {
-    setDroppedTools(newTools);
-    if (setParentDroppedTools) {
-      setParentDroppedTools(newTools);
-    }
-  };
-
-  // Handle mouse down on resize handle
-  const handleResizeMouseDown = (e, toolId) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    // Find the tool element and get its dimensions
-    const toolElement = e.currentTarget.closest('.dropped-tool');
-    if (!toolElement) return;
-    
-    resizingRef.current = true;
-    setResizingToolId(toolId);
-    setResizeStart({
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      initialWidth: toolElement.offsetWidth,
-      initialHeight: toolElement.offsetHeight,
-    });
-  };
-
-  // Handle mouse move for resizing
-  useEffect(() => {
-    if (!resizingToolId || !resizeStart || typeof document === 'undefined') return;
-
-    const handleMouseMove = (e) => {
-      const deltaX = e.clientX - resizeStart.mouseX;
-      const deltaY = e.clientY - resizeStart.mouseY;
-      const newWidth = Math.max(80, resizeStart.initialWidth + deltaX);
-      const newHeight = Math.max(40, resizeStart.initialHeight + deltaY);
-
-      setDroppedTools((prevTools) =>
-        prevTools.map((tool) =>
-          tool.id === resizingToolId
-            ? { ...tool, width: newWidth, height: newHeight }
-            : tool
-        )
-      );
-    };
-
-    const handleMouseUp = () => {
-      setResizingToolId(null);
-      setResizeStart(null);
-      resizingRef.current = false;
-    };
-
-    if (document) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [resizingToolId, resizeStart]);
-
-  // Sync with parent when tools change (including resizing)
-  useEffect(() => {
-    if (setParentDroppedTools && !resizingToolId) {
-      setParentDroppedTools(droppedTools);
-    }
-  }, [droppedTools, resizingToolId, setParentDroppedTools]);
+    droppedToolsRef.current = droppedTools;
+  }, [droppedTools]);
 
   // Load PDF from file upload
   useEffect(() => {
@@ -196,6 +125,86 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     }
   };
 
+  const handleResizeStart = (e, toolId, corner) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizeStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      corner: corner,
+      toolId: toolId,
+      tool: droppedToolsRef.current.find(t => t.id === toolId)
+    };
+    setIsResizing(true);
+  };
+
+  const handleResizeMove = useCallback((e) => {
+    if (!resizeStartRef.current) return;
+
+    const deltaX = e.clientX - resizeStartRef.current.x;
+    const deltaY = e.clientY - resizeStartRef.current.y;
+    const toolId = resizeStartRef.current.toolId;
+    const corner = resizeStartRef.current.corner;
+
+    const updatedTools = droppedToolsRef.current.map(tool => {
+      if (tool.id === toolId) {
+        let newWidth = tool.width || 100;
+        let newHeight = tool.height || 60;
+        let newX = tool.x;
+        let newY = tool.y;
+
+        // Adjust dimensions based on which corner is being dragged
+        if (corner === 'se') {
+          // Southeast - resize from bottom-right
+          newWidth += deltaX;
+          newHeight += deltaY;
+        } else if (corner === 'sw') {
+          // Southwest - resize from bottom-left
+          newWidth -= deltaX;
+          newHeight += deltaY;
+          newX += deltaX;
+        } else if (corner === 'ne') {
+          // Northeast - resize from top-right
+          newWidth += deltaX;
+          newHeight -= deltaY;
+          newY += deltaY;
+        } else if (corner === 'nw') {
+          // Northwest - resize from top-left
+          newWidth -= deltaX;
+          newHeight -= deltaY;
+          newX += deltaX;
+          newY += deltaY;
+        }
+
+        // Minimum dimensions to prevent too small resize
+        newWidth = Math.max(50, newWidth);
+        newHeight = Math.max(30, newHeight);
+
+        return { ...tool, x: newX, y: newY, width: newWidth, height: newHeight };
+      }
+      return tool;
+    });
+
+    updateTools(updatedTools);
+  }, [updateTools]);
+
+  const handleResizeEnd = useCallback(() => {
+    resizeStartRef.current = null;
+    setIsResizing(false);
+  }, []);
+
+  // Add mousemove and mouseup listeners for resizing
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', handleResizeMove);
+      window.addEventListener('mouseup', handleResizeEnd);
+      return () => {
+        window.removeEventListener('mousemove', handleResizeMove);
+        window.removeEventListener('mouseup', handleResizeEnd);
+      };
+    }
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
+
   const handleDragOver = (event) => {
     event.preventDefault();
     event.currentTarget.classList.add('drag-over');
@@ -217,9 +226,6 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     const x = event.clientX - wrapperRect.left;
     const y = event.clientY - wrapperRect.top;
     
-    // Check if it's a tool being dragged from dropped tools (via drag data)
-    const droppedToolData = event.dataTransfer.getData('text/plain');
-    
     // Get the PDF page element to validate drop area
     const pdfPage = wrapper.querySelector('.react-pdf__Page');
     if (!pdfPage) {
@@ -233,40 +239,21 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     const pageRight = pageLeft + pageRect.width;
     const pageBottom = pageTop + pageRect.height;
     
-    // Account for tool dimensions - get from the tool being dragged if available
-    let toolWidth = 144;
-    let toolHeight = 56;
-    
-    // If we have the dragged tool ID, get its actual dimensions
-    if (droppedToolData && droppedToolData.startsWith('dropped-')) {
-      const toolId = droppedToolData.replace('dropped-', '');
-      const draggedTool = droppedTools.find(t => t.id === toolId);
-      if (draggedTool) {
-        toolWidth = draggedTool.width || 120;
-        toolHeight = draggedTool.height || 40;
-      }
-    }
+    // Account for tool dimensions (min-width: 120px, min-height: 40px + padding: 8px 12px on all sides)
+    // Total: 120 + 24 (left+right padding) = 144px width, 40 + 16 (top+bottom padding) = 56px height
+    const toolWidth = 144;
+    const toolHeight = 56;
     
     // Check if drop + tool dimensions would be within page boundaries
     const isWithinPage = x >= pageLeft && (x + toolWidth) <= pageRight && y >= pageTop && (y + toolHeight) <= pageBottom;
+    console.log('Drop position:', { x, y }, 'Tool size:', { toolWidth, toolHeight }, 'Page bounds:', { pageLeft, pageTop, pageRight, pageBottom }, 'Within page:', isWithinPage);
     
     if (!isWithinPage) {
       console.log('Drop outside page - ignoring');
       return; // Ignore drops outside the page
     }
-
-    // If it's a tool being dragged from dropped tools (via drag data)
-    if (droppedToolData && droppedToolData.startsWith('dropped-')) {
-      const toolId = droppedToolData.replace('dropped-', '');
-      const updatedTools = droppedTools.map((tool) =>
-        tool.id === toolId ? { ...tool, x, y } : tool
-      );
-      updateTools(updatedTools);
-      setDraggedToolId(null);
-      return;
-    }
-
-    // Fallback check for draggedToolId state (for compatibility)
+    
+    // Check if it's a tool being dragged from dropped tools
     if (draggedToolId) {
       const updatedTools = droppedTools.map((tool) =>
         tool.id === draggedToolId ? { ...tool, x, y } : tool
@@ -358,6 +345,13 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
+            onClick={(e) => {
+              // Deselect when clicking on empty canvas area (not on a tool)
+              // Check if the click target is NOT a dropped-tool or its children
+              if (!e.target.closest('.dropped-tool')) {
+                setSelectedToolId(null);
+              }
+            }}
           >
             {loading ? (
               <div className="pdf-loading">Loading PDF...</div>
@@ -368,59 +362,90 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                     <Page pageNumber={currentPage} scale={1.5} />
                   </Document>
                   {/* Only render tools after PDF has loaded successfully */}
-                  {numPages && droppedTools.filter((item) => item.page === currentPage).map((item) => {
-                    // Check if this is a signature/initial image (base64 data starts with 'data:image')
-                    const isImage = typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
-                    
-                    return (
-                      <div
-                        key={item.id}
-                        className="dropped-tool"
-                        draggable
-                        onDragStart={(e) => {
-                          if (resizingRef.current) {
-                            e.preventDefault();
-                            return;
-                          }
-                          setDraggedToolId(item.id);
-                          // Set drag data so we know it's from dropped tools
-                          e.dataTransfer.effectAllowed = 'move';
-                          e.dataTransfer.setData('text/plain', `dropped-${item.id}`);
-                        }}
-                        onDragEnd={() => {
-                          setDraggedToolId(null);
-                        }}
-                        style={{
-                          position: 'absolute',
-                          left: `${item.x}px`,
-                          top: `${item.y}px`,
-                          width: item.width ? `${item.width}px` : '120px',
-                          height: item.height ? `${item.height}px` : '40px',
-                        }}
-                      >
-                        {isImage ? (
-                          <img 
-                            src={item.tool.value} 
-                            alt={item.tool.label}
-                            style={{
-                              maxWidth: '100%',
-                              maxHeight: '100%',
-                              objectFit: 'contain',
-                              pointerEvents: 'none',
-                            }}
-                          />
-                        ) : (
-                          <div className="dropped-tool-label">{item.tool.value || item.tool.label}</div>
-                        )}
-                        {/* Resize handle - bottom-right corner */}
+                  {numPages && (() => {
+                    const toolsOnCurrentPage = droppedTools.filter((item) => item.page === currentPage);
+                    console.log('Tools to render on page', currentPage, ':', toolsOnCurrentPage.length, 'out of', droppedTools.length);
+                    return toolsOnCurrentPage.map((item) => {
+                      // Check if this is a signature/initial image (base64 data starts with 'data:image')
+                      const isImage = typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
+                      if (item.tool.label === 'My Signature' || item.tool.label === 'My Initial') {
+                        console.log('Rendering signature field:', { 
+                          label: item.tool.label, 
+                          isImage, 
+                          hasValue: !!item.tool.value,
+                          valueLength: typeof item.tool.value === 'string' ? item.tool.value.length : 0,
+                          valueStart: typeof item.tool.value === 'string' ? item.tool.value.substring(0, 50) : 'N/A'
+                        });
+                      }
+                      
+                      return (
                         <div
-                          className="resize-handle"
-                          onMouseDown={(e) => handleResizeMouseDown(e, item.id)}
-                          title="Drag to resize"
-                        />
-                      </div>
-                    );
-                  })}
+                          key={item.id}
+                          className={`dropped-tool ${isImage ? 'signature-image' : ''} ${selectedToolId === item.id ? 'selected' : ''}`}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedToolId(item.id);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedToolId(null);
+                          }}
+                          onClick={() => {
+                            console.log('Tool clicked:', item.id, item.tool.label);
+                            setSelectedToolId(item.id);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            left: `${item.x}px`,
+                            top: `${item.y}px`,
+                            width: isImage && item.width ? `${item.width}px` : 'auto',
+                            height: isImage && item.height ? `${item.height}px` : 'auto',
+                          }}
+                        >
+                          {isImage ? (
+                            <img 
+                              src={item.tool.value} 
+                              alt={item.tool.label}
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                objectFit: 'contain',
+                                width: '100%',
+                                height: '100%'
+                              }}
+                            />
+                          ) : (
+                            <div className="dropped-tool-label">{item.tool.value || item.tool.label}</div>
+                          )}
+                          
+                          {/* Resize handles - only for signature/initial images when selected */}
+                          {isImage && selectedToolId === item.id && (
+                            <>
+                              <div
+                                className="resize-handle resize-handle-nw"
+                                onMouseDown={(e) => handleResizeStart(e, item.id, 'nw')}
+                                title="Resize from top-left"
+                              />
+                              <div
+                                className="resize-handle resize-handle-ne"
+                                onMouseDown={(e) => handleResizeStart(e, item.id, 'ne')}
+                                title="Resize from top-right"
+                              />
+                              <div
+                                className="resize-handle resize-handle-sw"
+                                onMouseDown={(e) => handleResizeStart(e, item.id, 'sw')}
+                                title="Resize from bottom-left"
+                              />
+                              <div
+                                className="resize-handle resize-handle-se"
+                                onMouseDown={(e) => handleResizeStart(e, item.id, 'se')}
+                                title="Resize from bottom-right"
+                              />
+                            </>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
 
                 {numPages && numPages > 1 && (

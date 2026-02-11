@@ -22,6 +22,9 @@ function DocumentSigningPage() {
   const [documentId, setDocumentId] = useState(null);
   const [fileData, setFileData] = useState(null);
   const [droppedTools, setDroppedTools] = useState([]);
+  const [selectedToolId, setSelectedToolId] = useState(null);
+  const [isLoadingFromDb, setIsLoadingFromDb] = useState(false);
+  const lastSavedToolsRef = useRef(null);
   const documentViewerRef = useRef(null);
 
   // If navigated from dashboard with document data, use it
@@ -72,6 +75,7 @@ function DocumentSigningPage() {
   // Function to load tools from database
   const loadToolsFromDatabase = async (docId) => {
     try {
+      setIsLoadingFromDb(true);
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/documents/${docId}/tools`, {
         method: 'GET',
@@ -96,22 +100,50 @@ function DocumentSigningPage() {
           
           setDroppedTools(reconstructedTools);
           console.log('Loaded tools from database for document:', docId, reconstructedTools);
+          // Store what we just loaded so we don't immediately re-save it
+          lastSavedToolsRef.current = JSON.stringify(
+            reconstructedTools.map(item => ({
+              id: item.id,
+              x: item.x,
+              y: item.y,
+              page: item.page,
+              label: item.tool.label,
+            }))
+          );
         }
       }
     } catch (error) {
       console.error('Error loading tools from database:', error);
+    } finally {
+      // Use timeout to ensure the ref is properly set before allowing saves
+      setTimeout(() => setIsLoadingFromDb(false), 100);
     }
   };
 
   // Save dropped tools to database whenever they change
   useEffect(() => {
-    if (!documentId) {
-      console.log('Save effect skipped - no documentId');
+    // Skip saving if we're currently loading from database
+    if (isLoadingFromDb) {
       return;
     }
 
-    if (droppedTools.length === 0) {
-      console.log('Save effect skipped - no tools to save');
+    if (!documentId) {
+      return;
+    }
+
+    // Create a comparison string to check if anything actually changed
+    const currentToolsString = JSON.stringify(
+      droppedTools.map(item => ({
+        id: item.id,
+        x: item.x,
+        y: item.y,
+        page: item.page,
+        label: item.tool.label,
+      }))
+    );
+
+    // Don't save if we just loaded these exact tools from the database
+    if (lastSavedToolsRef.current === currentToolsString) {
       return;
     }
 
@@ -129,7 +161,6 @@ function DocumentSigningPage() {
             value: item.tool.value,
             placeholder: item.tool.placeholder,
             className: item.tool.className,
-            // Don't send icon as it's a React component
           },
           x: item.x,
           y: item.y,
@@ -149,6 +180,8 @@ function DocumentSigningPage() {
         
         if (response.ok) {
           console.log(`✓ Saved ${droppedTools.length} tools to database`);
+          // Update the ref with what we just saved
+          lastSavedToolsRef.current = currentToolsString;
         } else {
           console.error('Failed to save tools to database:', response.status, data);
         }
@@ -158,7 +191,7 @@ function DocumentSigningPage() {
     };
 
     saveToolsToDatabase();
-  }, [droppedTools, documentId]);
+  }, [droppedTools, documentId, isLoadingFromDb]);
 
   const handleDocumentUpload = (file) => {
     setDocument(file);
@@ -172,6 +205,14 @@ function DocumentSigningPage() {
     localStorage.removeItem('currentDocument');
     setDroppedTools([]);
     navigate('/');
+  };
+
+  const handleDeleteTool = (toolId) => {
+    console.log('Deleting tool:', toolId);
+    const updatedTools = droppedTools.filter((t) => t.id !== toolId);
+    console.log('Tools after deletion:', updatedTools.length, 'remaining');
+    setDroppedTools(updatedTools);
+    setSelectedToolId(null);
   };
 
   const handlePreview = () => {
@@ -241,9 +282,15 @@ function DocumentSigningPage() {
           onDocumentUpload={handleDocumentUpload}
           droppedTools={droppedTools}
           setDroppedTools={setDroppedTools}
+          selectedToolId={selectedToolId}
+          setSelectedToolId={setSelectedToolId}
           ref={documentViewerRef}
         />
-        <RightPanel />
+        <RightPanel
+          selectedToolId={selectedToolId}
+          droppedTools={droppedTools}
+          onDeleteTool={handleDeleteTool}
+        />
       </div>
     </div>
   );

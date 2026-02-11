@@ -29,6 +29,72 @@
   padding: 20px;
 }
 
+.tool-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.property-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.property-item label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+}
+
+.property-item p {
+  margin: 0;
+  font-size: 14px;
+  color: #1f2937;
+  background-color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.delete-btn:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.delete-btn:active {
+  transform: translateY(0);
+}
+
+.no-selection {
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+
 /* Scrollbar Styling */
 .right-panel::-webkit-scrollbar {
   width: 6px;

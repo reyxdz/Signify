@@ -292,7 +292,7 @@
   user-select: none;
   touch-action: none;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
-  position: relative;
+  outline: 1px solid transparent;
 }
 
 .dropped-tool:hover {
@@ -300,29 +300,87 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
-.dropped-tool:hover .resize-handle {
-  opacity: 1;
+.dropped-tool.selected {
+  background-color: #3b82f6;
+  border-color: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
+.dropped-tool.selected .dropped-tool-label {
+  color: #ffffff;
+}
+
+/* Signature/Initial Image Styles - No design when not selected */
+.dropped-tool.signature-image {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  outline: 1px solid transparent;
+  transition: all 0.2s ease;
+  overflow: visible;
+}
+
+.dropped-tool.signature-image:hover {
+  background-color: transparent;
+  box-shadow: none;
+  outline: 1px dashed rgba(59, 130, 246, 0.5);
+}
+
+/* When signature/initial is selected, show the design */
+.dropped-tool.signature-image.selected {
+  background-color: #f0f9ff;
+  border: 2px dashed #3b82f6;
+  padding: 8px 12px;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+  outline: none;
+  overflow: visible;
+}
+
+.dropped-tool.signature-image.selected:hover {
+  background-color: #e0f2fe;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+/* Resize Handles */
 .resize-handle {
   position: absolute;
-  bottom: -4px;
-  right: -4px;
-  width: 16px;
-  height: 16px;
+  width: 10px;
+  height: 10px;
   background-color: #3b82f6;
   border: 2px solid #ffffff;
-  border-radius: 2px;
-  cursor: nwse-resize;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  border-radius: 50%;
+  cursor: grab;
   z-index: 20;
-  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.resize-handle:hover {
-  background-color: #2563eb;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+.resize-handle:active {
+  cursor: grabbing;
+}
+
+.resize-handle-nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.resize-handle-ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.resize-handle-sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.resize-handle-se {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
 }
 
 .dropped-tool-label {
@@ -335,4 +393,11 @@
   font-weight: 600;
   color: #3b82f6;
   white-space: nowrap;
+}
+
+.dropped-tool img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }

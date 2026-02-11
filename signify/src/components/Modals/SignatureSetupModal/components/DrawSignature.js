@@ -9,6 +9,65 @@ const DrawSignature = ({ user, onComplete, onNext, onBack }) => {
   const [step, setStep] = useState('signature'); // 'signature' or 'initials'
   const [signatureImage, setSignatureImage] = useState(null);
 
+  // Helper function to crop canvas to only include drawn content
+  const cropCanvasToContent = (canvas) => {
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    let minX = canvas.width;
+    let minY = canvas.height;
+    let maxX = 0;
+    let maxY = 0;
+
+    // Find the bounding box of non-transparent pixels
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = data[i + 3];
+      if (alpha > 128) { // Only consider pixels with significant opacity
+        const pixelIndex = i / 4;
+        const x = pixelIndex % canvas.width;
+        const y = Math.floor(pixelIndex / canvas.width);
+
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    // Add some padding around the signature for better appearance
+    const padding = 10;
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(canvas.width, maxX + padding);
+    maxY = Math.min(canvas.height, maxY + padding);
+
+    // If no content found, return original canvas as data URL
+    if (minX >= maxX || minY >= maxY) {
+      return canvas.toDataURL();
+    }
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // Create a new canvas with the cropped dimensions
+    const croppedCanvas = document.createElement('canvas');
+    croppedCanvas.width = width;
+    croppedCanvas.height = height;
+
+    const croppedCtx = croppedCanvas.getContext('2d');
+    // Fill with transparent background
+    croppedCtx.clearRect(0, 0, width, height);
+    // Copy only the drawn content
+    croppedCtx.drawImage(
+      canvas,
+      minX, minY, width, height,
+      0, 0, width, height
+    );
+
+    return croppedCanvas.toDataURL();
+  };
+
   const getCanvasCoordinates = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -71,7 +130,8 @@ const DrawSignature = ({ user, onComplete, onNext, onBack }) => {
   const handleConfirm = () => {
     if (step === 'signature' && !isEmpty) {
       const canvas = canvasRef.current;
-      setSignatureImage(canvas.toDataURL());
+      // Crop the canvas to remove empty space and store only the signature
+      setSignatureImage(cropCanvasToContent(canvas));
       setStep('initials');
       setIsEmpty(true);
       if (canvasRef.current) {
@@ -81,11 +141,11 @@ const DrawSignature = ({ user, onComplete, onNext, onBack }) => {
     } else if (step === 'initials' && !isEmpty) {
       const canvas = canvasRef.current;
       
-      // Complete with both images
+      // Complete with both images (both cropped)
       onComplete({
         type: 'drawn',
         signature: signatureImage,
-        initials: canvas.toDataURL(),
+        initials: cropCanvasToContent(canvas),
       });
       onNext();
     }
