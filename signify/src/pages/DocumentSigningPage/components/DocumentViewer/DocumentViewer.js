@@ -19,6 +19,14 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [resizeStart, setResizeStart] = useState(null);
   const resizingRef = useRef(false);
 
+  // Sync from parent when tools change, but not while dragging/resizing
+  useEffect(() => {
+    if (parentDroppedTools && parentDroppedTools.length > 0 && !draggedToolId && !resizingToolId) {
+      // Only sync if parent has tools and we're not actively dragging/resizing
+      setDroppedTools(parentDroppedTools);
+    }
+  }, [parentDroppedTools, draggedToolId, resizingToolId]);
+
 
   // Helper function to update tools in both local and parent state
   const updateTools = (newTools) => {
