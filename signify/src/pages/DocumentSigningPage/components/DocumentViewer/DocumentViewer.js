@@ -9,24 +9,16 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
   const wrapperRef = useRef(null);
-  const initialLoadDoneRef = useRef(false);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [droppedTools, setDroppedTools] = useState([]);
+  const [droppedTools, setDroppedTools] = useState(() => parentDroppedTools || []);
   const [draggedToolId, setDraggedToolId] = useState(null);
   const [resizingToolId, setResizingToolId] = useState(null);
   const [resizeStart, setResizeStart] = useState(null);
   const resizingRef = useRef(false);
 
-  // Sync from parent only once when tools arrive
-  useEffect(() => {
-    if (!initialLoadDoneRef.current && parentDroppedTools && parentDroppedTools.length > 0 && droppedTools.length === 0) {
-      initialLoadDoneRef.current = true;
-      setDroppedTools(parentDroppedTools);
-    }
-  }, [parentDroppedTools]);
 
   // Helper function to update tools in both local and parent state
   const updateTools = (newTools) => {
