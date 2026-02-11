@@ -129,19 +129,24 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
     e.preventDefault();
     e.stopPropagation();
     
-    // Find the tool and get its current dimensions
+    // Find the tool element to get its actual rendered dimensions
+    const toolElement = document.querySelector(`[data-tool-id="${toolId}"]`);
+    let actualWidth = 100;
+    let actualHeight = 60;
+    
+    if (toolElement) {
+      // Get the actual rendered size from the DOM
+      const rect = toolElement.getBoundingClientRect();
+      actualWidth = rect.width;
+      actualHeight = rect.height;
+    }
+    
+    // Find the tool and initialize dimensions if needed
     const tool = droppedToolsRef.current.find(t => t.id === toolId);
-    if (!tool) return;
-    
-    // Initialize width/height if not already set
-    const initialWidth = tool.width || 100;
-    const initialHeight = tool.height || 60;
-    
-    // Ensure tool has dimensions for consistency
-    if (!tool.width || !tool.height) {
+    if (tool && (!tool.width || !tool.height)) {
       const updatedTools = droppedToolsRef.current.map(t =>
         t.id === toolId 
-          ? { ...t, width: initialWidth, height: initialHeight }
+          ? { ...t, width: actualWidth, height: actualHeight }
           : t
       );
       updateTools(updatedTools);
@@ -404,6 +409,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                       return (
                         <div
                           key={item.id}
+                          data-tool-id={item.id}
                           className={`dropped-tool ${isImage ? 'signature-image' : ''} ${selectedToolId === item.id ? 'selected' : ''}`}
                           draggable
                           onDragStart={(e) => {
