@@ -39,13 +39,18 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const handleResizeMouseDown = (e, toolId) => {
     e.stopPropagation();
     e.preventDefault();
+    
+    // Find the tool element and get its dimensions
+    const toolElement = e.currentTarget.closest('.dropped-tool');
+    if (!toolElement) return;
+    
     resizingRef.current = true;
     setResizingToolId(toolId);
     setResizeStart({
       mouseX: e.clientX,
       mouseY: e.clientY,
-      initialWidth: e.currentTarget.parentElement.offsetWidth,
-      initialHeight: e.currentTarget.parentElement.offsetHeight,
+      initialWidth: toolElement.offsetWidth,
+      initialHeight: toolElement.offsetHeight,
     });
   };
 
@@ -355,6 +360,9 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                             return;
                           }
                           setDraggedToolId(item.id);
+                          // Set drag data so we know it's from dropped tools
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', `dropped-${item.id}`);
                         }}
                         onDragEnd={() => {
                           setDraggedToolId(null);
