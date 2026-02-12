@@ -17,36 +17,25 @@ function RecipientSigningView({
   const [recipientSignatures, setRecipientSignatures] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [displayTools, setDisplayTools] = useState([]);
 
   // Get recipient fields (fields that start with "Recipient")
   const recipientFields = droppedTools.filter(tool => 
     tool?.tool?.label && tool.tool.label.startsWith('Recipient')
   );
 
-  // Initialize displayTools with recipientFields on mount or when recipientFields changes
-  React.useEffect(() => {
-    setDisplayTools(recipientFields);
-  }, [recipientFields]);
-
-  // Update displayTools when signatures are captured to show them immediately
-  React.useEffect(() => {
-    if (Object.keys(recipientSignatures).length > 0) {
-      const updatedTools = displayTools.map(tool => {
-        if (recipientSignatures[tool.id]) {
-          return {
-            ...tool,
-            tool: {
-              ...tool.tool,
-              value: recipientSignatures[tool.id]
-            }
-          };
+  // Compute displayTools with signature data included
+  const displayTools = recipientFields.map(tool => {
+    if (recipientSignatures[tool.id]) {
+      return {
+        ...tool,
+        tool: {
+          ...tool.tool,
+          value: recipientSignatures[tool.id]
         }
-        return tool;
-      });
-      setDisplayTools(updatedTools);
+      };
     }
-  }, [recipientSignatures]);
+    return tool;
+  });
 
   const handleSignField = (field) => {
     setCurrentField(field);
