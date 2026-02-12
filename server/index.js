@@ -1066,7 +1066,19 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
                     recipients: tool.assignedRecipients.map(r => ({ id: r.recipientId, email: r.recipientEmail, status: r.status }))
                 });
                 // Find the recipient in assignedRecipients array
-                const recipientIndex = tool.assignedRecipients.findIndex(r => r.recipientId.toString() === recipient._id.toString());
+                let recipientIndex = tool.assignedRecipients.findIndex(r => r.recipientId.toString() === recipient._id.toString());
+                
+                // If recipient not found, add them to the array
+                if (recipientIndex === -1) {
+                    console.log(`Recipient ${user.email} not in assignedRecipients, adding them`);
+                    tool.assignedRecipients.push({
+                        recipientId: recipient._id,
+                        recipientEmail: user.email,
+                        status: 'pending',
+                        signatureData: null,
+                    });
+                    recipientIndex = tool.assignedRecipients.length - 1;
+                }
                 
                 if (recipientIndex !== -1) {
                     console.log(`Found recipient at index ${recipientIndex}, updating signature data`);
