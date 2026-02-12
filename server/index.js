@@ -1166,6 +1166,10 @@ app.get("/api/documents/:documentId", verifyToken, async (req, resp) => {
         const documentTools = await DocumentTools.findOne({ documentId: documentId });
         let tools = documentTools ? documentTools.tools : [];
         
+        // Get current user's email for finding their signature in assignedRecipients
+        const currentUser = await User.findById(userId);
+        const currentUserEmail = currentUser ? currentUser.email : null;
+        
         if (tools && tools.length > 0) {
             for (let i = 0; i < tools.length; i++) {
                 const toolId = tools[i].id;
@@ -1182,10 +1186,29 @@ app.get("/api/documents/:documentId", verifyToken, async (req, resp) => {
                         docTool = await DocumentTool.findById(toolId);
                     }
                     
-                    if (docTool && docTool.signatureData) {
-                        // Update the tool with signature data
-                        tools[i].tool = tools[i].tool || {};
-                        tools[i].tool.value = docTool.signatureData;
+                    if (docTool) {
+                        let signatureData = null;
+                        
+                        // First check assignedRecipients array for current user's signature
+                        if (currentUserEmail && docTool.assignedRecipients && docTool.assignedRecipients.length > 0) {
+                            const userRecipient = docTool.assignedRecipients.find(r => 
+                                r.recipientEmail && r.recipientEmail.toLowerCase() === currentUserEmail.toLowerCase()
+                            );
+                            if (userRecipient && userRecipient.signatureData) {
+                                signatureData = userRecipient.signatureData;
+                            }
+                        }
+                        
+                        // Fall back to legacy signatureData field
+                        if (!signatureData && docTool.signatureData) {
+                            signatureData = docTool.signatureData;
+                        }
+                        
+                        if (signatureData) {
+                            // Update the tool with signature data
+                            tools[i].tool = tools[i].tool || {};
+                            tools[i].tool.value = signatureData;
+                        }
                     }
                 } catch (error) {
                     console.log('Error fetching DocumentTool for toolId:', toolId, error.message);
@@ -1289,6 +1312,10 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
 
         // Enhance tools with signature data from DocumentTool records
         if (tools && tools.length > 0) {
+            // Get current user's email for finding their signature in assignedRecipients
+            const currentUser = await User.findById(userId);
+            const currentUserEmail = currentUser ? currentUser.email : null;
+            
             for (let i = 0; i < tools.length; i++) {
                 const toolId = tools[i].id;
                 try {
@@ -1304,10 +1331,29 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                         docTool = await DocumentTool.findById(toolId);
                     }
                     
-                    if (docTool && docTool.signatureData) {
-                        // Update the tool with signature data
-                        tools[i].tool = tools[i].tool || {};
-                        tools[i].tool.value = docTool.signatureData;
+                    if (docTool) {
+                        let signatureData = null;
+                        
+                        // First check assignedRecipients array for current user's signature
+                        if (currentUserEmail && docTool.assignedRecipients && docTool.assignedRecipients.length > 0) {
+                            const userRecipient = docTool.assignedRecipients.find(r => 
+                                r.recipientEmail && r.recipientEmail.toLowerCase() === currentUserEmail.toLowerCase()
+                            );
+                            if (userRecipient && userRecipient.signatureData) {
+                                signatureData = userRecipient.signatureData;
+                            }
+                        }
+                        
+                        // Fall back to legacy signatureData field
+                        if (!signatureData && docTool.signatureData) {
+                            signatureData = docTool.signatureData;
+                        }
+                        
+                        if (signatureData) {
+                            // Update the tool with signature data
+                            tools[i].tool = tools[i].tool || {};
+                            tools[i].tool.value = signatureData;
+                        }
                     }
                 } catch (error) {
                     console.log('Error fetching DocumentTool for toolId:', toolId, error.message);
