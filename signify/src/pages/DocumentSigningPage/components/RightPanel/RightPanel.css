@@ -373,6 +373,39 @@
   color: #6b7280;
 }
 
+.clear-all-btn {
+  padding: 10px 12px;
+  border: none;
+  background-color: #fee2e2;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  flex: 1;
+  margin-left: 8px;
+}
+
+.clear-all-btn:hover {
+  background-color: #fecaca;
+}
+
+.dropdown-footer {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #f1f5f9;
+  padding: 8px 0;
+  margin-top: 8px;
+}
+
+.dropdown-footer .close-search-btn {
+  flex: 1;
+  margin: 0;
+  padding: 10px 12px;
+  border: none;
+  border-top: none;
+}
+
 /* Recipient Assignment Section */
 .recipient-assignment-section {
   display: flex;
@@ -385,65 +418,194 @@
 }
 
 .section-divider {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #6b7280;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.assigned-recipient {
+.recipient-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  background-color: #dbeafe;
+  color: #0369a1;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Multi-recipient tags list */
+.assigned-recipients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.assigned-recipient-tag {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 12px;
+  padding: 8px 10px;
   background-color: #f0f9ff;
   border: 1px solid #e0f2fe;
   border-radius: 5px;
   transition: all 0.2s ease;
+  gap: 6px;
 }
 
-.assigned-recipient:hover {
+.assigned-recipient-tag:hover {
   border-color: #bae6fd;
+  background-color: #ecf7ff;
 }
 
-.recipient-info {
+.recipient-tag-content {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   flex: 1;
+  min-width: 0;
 }
 
-.recipient-email {
-  font-size: 13px;
+.recipient-email-tag {
+  font-size: 12px;
   font-weight: 600;
   color: #1e40af;
-  letter-spacing: -0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.recipient-name {
-  font-size: 12px;
+.recipient-name-tag {
+  font-size: 11px;
   color: #0369a1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.remove-recipient-btn {
-  padding: 4px 6px;
+.recipient-status-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  width: fit-content;
+}
+
+.recipient-status-badge.signed {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.recipient-status-badge.declined {
+  background-color: #fecaca;
+  color: #7f1d1d;
+}
+
+.remove-recipient-tag-btn {
+  padding: 2px 4px;
   background-color: transparent;
   border: none;
-  color: #64748b;
+  color: #cbd5e1;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+  flex-shrink: 0;
+  border-radius: 3px;
 }
 
-.remove-recipient-btn:hover {
+.remove-recipient-tag-btn:hover {
   background-color: #fee2e2;
   color: #dc2626;
+}
+
+/* Empty recipients state */
+.empty-recipients-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+}
+
+.empty-recipients-state p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.empty-recipients-state small {
+  display: block;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* Search result items */
+.recipient-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background-color: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  border: none;
+  width: 100%;
+}
+
+.recipient-item:hover {
+  background-color: #f8fafc;
+}
+
+.recipient-item:active {
+  background-color: #f0f9ff;
+}
+
+.add-icon {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.recipient-result-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.recipient-item-email {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipient-item-name {
+  font-size: 12px;
+  color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .no-recipients-message {

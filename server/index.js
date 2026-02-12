@@ -322,6 +322,39 @@ const DocumentToolSchema = new mongoose.Schema({
         type: String,
         default: null,
     },
+    // Multi-recipient support: array of recipients assigned to this tool
+    assignedRecipients: [
+        {
+            recipientId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'documentRecipients',
+                required: true,
+            },
+            recipientEmail: {
+                type: String,
+                required: true,
+            },
+            recipientName: {
+                type: String,
+                default: null,
+            },
+            status: {
+                type: String,
+                enum: ['pending', 'signed', 'declined'],
+                default: 'pending',
+            },
+            signatureData: {
+                type: String,
+                default: null,
+            },
+            signedAt: {
+                type: Date,
+                default: null,
+            },
+            _id: false, // Prevent automatic _id for subdocuments
+        },
+    ],
+    // Legacy single recipient support (backward compatibility)
     assignedToRecipientId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'documentRecipients',
@@ -1028,6 +1061,111 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
     } catch (error) {
         console.error("Error fetching document tools:", error);
         resp.status(500).send({ message: "Error fetching tools", error: error.message });
+    }
+});
+
+// Assign multiple recipients to a document tool (field)
+// POST /api/documents/:documentId/tools/:toolId/recipients
+app.post("/api/documents/:documentId/tools/:toolId/recipients", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId, toolId } = req.params;
+        const { recipients } = req.body; // Array of { recipientEmail, recipientName, recipientId }
+
+        if (!recipients || !Array.isArray(recipients)) {
+            return resp.status(400).send({ message: "Recipients array is required" });
+        }
+
+        // Verify document belongs to user
+        const document = await Document.findById(documentId);
+        if (!document || document.userId.toString() !== userId) {
+            return resp.status(403).send({ message: "Not authorized to update this document" });
+        }
+
+        // Get the tools array from legacy storage
+        let documentTools = await DocumentTools.findOne({ documentId: documentId });
+        if (!documentTools) {
+            return resp.status(404).send({ message: "Document tools not found" });
+        }
+
+        // Find the specific tool
+        const toolIndex = documentTools.tools.findIndex(t => t.id === toolId);
+        if (toolIndex === -1) {
+            return resp.status(404).send({ message: "Tool not found" });
+        }
+
+        // Format recipients array for the tool
+        const assignedRecipients = recipients.map(r => ({
+            recipientId: r.recipientId,
+            recipientEmail: r.recipientEmail,
+            recipientName: r.recipientName || null,
+            status: 'pending',
+            signatureData: null,
+            signedAt: null,
+        }));
+
+        // Update tool with new recipients
+        documentTools.tools[toolIndex].assignedRecipients = assignedRecipients;
+        
+        // Also update legacy single recipient field for backward compatibility (use first recipient)
+        if (recipients.length > 0) {
+            documentTools.tools[toolIndex].assignedRecipient = {
+                _id: recipients[0].recipientId,
+                recipientEmail: recipients[0].recipientEmail,
+                recipientName: recipients[0].recipientName,
+            };
+        }
+
+        await documentTools.save();
+
+        resp.status(200).send({
+            message: "Recipients assigned successfully",
+            tool: documentTools.tools[toolIndex],
+        });
+    } catch (error) {
+        console.error("Error assigning recipients to tool:", error);
+        resp.status(500).send({ message: "Error assigning recipients", error: error.message });
+    }
+});
+
+// Remove a recipient from a document tool
+// DELETE /api/documents/:documentId/tools/:toolId/recipients/:recipientEmail
+app.delete("/api/documents/:documentId/tools/:toolId/recipients/:recipientEmail", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId, toolId, recipientEmail } = req.params;
+
+        // Verify document belongs to user
+        const document = await Document.findById(documentId);
+        if (!document || document.userId.toString() !== userId) {
+            return resp.status(403).send({ message: "Not authorized to update this document" });
+        }
+
+        const documentTools = await DocumentTools.findOne({ documentId: documentId });
+        if (!documentTools) {
+            return resp.status(404).send({ message: "Document tools not found" });
+        }
+
+        const toolIndex = documentTools.tools.findIndex(t => t.id === toolId);
+        if (toolIndex === -1) {
+            return resp.status(404).send({ message: "Tool not found" });
+        }
+
+        // Remove recipient from array
+        const tool = documentTools.tools[toolIndex];
+        if (tool.assignedRecipients && Array.isArray(tool.assignedRecipients)) {
+            tool.assignedRecipients = tool.assignedRecipients.filter(r => r.recipientEmail !== recipientEmail);
+        }
+
+        await documentTools.save();
+
+        resp.status(200).send({
+            message: "Recipient removed successfully",
+            tool: documentTools.tools[toolIndex],
+        });
+    } catch (error) {
+        console.error("Error removing recipient from tool:", error);
+        resp.status(500).send({ message: "Error removing recipient", error: error.message });
     }
 });
 
