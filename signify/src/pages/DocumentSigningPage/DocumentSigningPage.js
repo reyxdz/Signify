@@ -160,6 +160,11 @@ function DocumentSigningPage() {
       return;
     }
 
+    // Don't save tools if user is a recipient - only document owner can modify tools
+    if (isRecipient) {
+      return;
+    }
+
     // Create a comparison string to check if anything actually changed
     const currentToolsString = JSON.stringify(
       droppedTools.map(item => ({
@@ -232,7 +237,7 @@ function DocumentSigningPage() {
     };
 
     saveToolsToDatabase();
-  }, [droppedTools, documentId, isLoadingFromDb]);
+  }, [droppedTools, documentId, isLoadingFromDb, isRecipient]);
 
   const handleDocumentUpload = (file) => {
     setDocument(file);
