@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, Check } from 'lucide-react';
 import DocumentViewer from '../DocumentViewer/DocumentViewer';
 import SignatureCapture from './SignatureCapture';
@@ -22,6 +22,25 @@ function RecipientSigningView({
   const recipientFields = droppedTools.filter(tool => 
     tool?.tool?.label && tool.tool.label.startsWith('Recipient')
   );
+
+  // Initialize recipientSignatures from tools that already have signature data
+  useEffect(() => {
+    const initialSignatures = {};
+    recipientFields.forEach(tool => {
+      // Check if the tool already has signature data (from database)
+      if (tool.tool && tool.tool.value && typeof tool.tool.value === 'string' && tool.tool.value.startsWith('data:image')) {
+        initialSignatures[tool.id] = tool.tool.value;
+      }
+    });
+    
+    // Only update state if there are signatures to set
+    if (Object.keys(initialSignatures).length > 0) {
+      setRecipientSignatures(prev => ({
+        ...initialSignatures,
+        ...prev // Keep any new signatures they've added in this session
+      }));
+    }
+  }, [recipientFields]);
 
   // Compute displayTools with signature data included
   const displayTools = recipientFields.map(tool => {
