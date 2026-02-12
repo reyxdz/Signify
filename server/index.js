@@ -1169,11 +1169,19 @@ app.get("/api/documents/:documentId", verifyToken, async (req, resp) => {
         if (tools && tools.length > 0) {
             for (let i = 0; i < tools.length; i++) {
                 const toolId = tools[i].id;
-                const docTool = await DocumentTool.findById(toolId);
-                if (docTool && docTool.signatureData) {
-                    // Update the tool with signature data
-                    tools[i].tool = tools[i].tool || {};
-                    tools[i].tool.value = docTool.signatureData;
+                // Only query if toolId is a valid MongoDB ObjectId
+                if (mongoose.Types.ObjectId.isValid(toolId)) {
+                    try {
+                        const docTool = await DocumentTool.findById(toolId);
+                        if (docTool && docTool.signatureData) {
+                            // Update the tool with signature data
+                            tools[i].tool = tools[i].tool || {};
+                            tools[i].tool.value = docTool.signatureData;
+                        }
+                    } catch (error) {
+                        console.log('Error fetching DocumentTool:', toolId, error.message);
+                        // Continue without signature data if fetch fails
+                    }
                 }
             }
         }
@@ -1275,11 +1283,19 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
         if (tools && tools.length > 0) {
             for (let i = 0; i < tools.length; i++) {
                 const toolId = tools[i].id;
-                const docTool = await DocumentTool.findById(toolId);
-                if (docTool && docTool.signatureData) {
-                    // Update the tool with signature data
-                    tools[i].tool = tools[i].tool || {};
-                    tools[i].tool.value = docTool.signatureData;
+                // Only query if toolId is a valid MongoDB ObjectId
+                if (mongoose.Types.ObjectId.isValid(toolId)) {
+                    try {
+                        const docTool = await DocumentTool.findById(toolId);
+                        if (docTool && docTool.signatureData) {
+                            // Update the tool with signature data
+                            tools[i].tool = tools[i].tool || {};
+                            tools[i].tool.value = docTool.signatureData;
+                        }
+                    } catch (error) {
+                        console.log('Error fetching DocumentTool:', toolId, error.message);
+                        // Continue without signature data if fetch fails
+                    }
                 }
             }
         }
