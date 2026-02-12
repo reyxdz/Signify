@@ -1301,7 +1301,7 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
         }
 
         resp.status(200).send({
-            data: tools
+            tools: tools
         });
     } catch (error) {
         console.error("Error fetching document tools:", error);
