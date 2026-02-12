@@ -1038,12 +1038,49 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
             return resp.status(403).send({ message: "Unauthorized to sign this document - not a recipient" });
         }
 
+        // Update each tool with the signature data for this recipient
+        const updatedFields = [];
+        for (const [fieldId, signatureData] of Object.entries(signatures)) {
+            const tool = await DocumentTool.findById(fieldId);
+            if (tool) {
+                // Find the recipient in assignedRecipients array
+                const recipientIndex = tool.assignedRecipients.findIndex(r => r.recipientId.toString() === recipient._id.toString());
+                
+                if (recipientIndex !== -1) {
+                    // Update the specific recipient's signature in the array
+                    tool.assignedRecipients[recipientIndex].signatureData = signatureData;
+                    tool.assignedRecipients[recipientIndex].status = 'signed';
+                    tool.assignedRecipients[recipientIndex].signedAt = new Date();
+                    
+                    // Also update legacy fields if this is the only recipient
+                    if (tool.assignedRecipients.length === 1) {
+                        tool.signatureData = signatureData;
+                        tool.signedAt = new Date();
+                        tool.value = 'Signed';
+                    }
+                    
+                    await tool.save();
+                    updatedFields.push(fieldId);
+                }
+            }
+        }
+
         // Update recipient status to signed
         recipient.status = 'signed';
         recipient.signedAt = new Date();
         recipient.lastAccessedAt = new Date();
         recipient.accessCount = (recipient.accessCount || 0) + 1;
         await recipient.save();
+
+        // Check if all recipients have signed
+        const allRecipients = await DocumentRecipients.find({ documentId: documentId });
+        const allSigned = allRecipients.every(r => r.status === 'signed');
+
+        if (allSigned) {
+            document.status = 'completed';
+            document.completedAt = new Date();
+            await document.save();
+        }
 
         // Create activity log
         const activity = new Activity({
@@ -1057,12 +1094,13 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
 
         await activity.save();
 
-        console.log("Document signed by recipient:", documentId, "Recipient:", user.email);
+        console.log("Document signed by recipient:", documentId, "Recipient:", user.email, "Updated fields:", updatedFields.length);
         resp.status(200).send({
             message: "Document signed successfully",
             data: {
                 status: recipient.status,
                 signedAt: recipient.signedAt,
+                updatedFields: updatedFields.length,
             }
         });
     } catch (error) {
@@ -1123,6 +1161,24 @@ app.get("/api/documents/:documentId", verifyToken, async (req, resp) => {
         } else {
             console.log("No fileData found in document");
         }
+
+        // Fetch and enhance tools with signature data
+        const documentTools = await DocumentTools.findOne({ documentId: documentId });
+        let tools = documentTools ? documentTools.tools : [];
+        
+        if (tools && tools.length > 0) {
+            for (let i = 0; i < tools.length; i++) {
+                const toolId = tools[i].id;
+                const docTool = await DocumentTool.findById(toolId);
+                if (docTool && docTool.signatureData) {
+                    // Update the tool with signature data
+                    tools[i].tool = tools[i].tool || {};
+                    tools[i].tool.value = docTool.signatureData;
+                }
+            }
+        }
+        
+        documentObj.tools = tools;
 
         resp.status(200).send({
             message: "Document retrieved successfully",
@@ -1213,9 +1269,23 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
         }
 
         const documentTools = await DocumentTools.findOne({ documentId: documentId });
+        let tools = documentTools ? documentTools.tools : [];
+
+        // Enhance tools with signature data from DocumentTool records
+        if (tools && tools.length > 0) {
+            for (let i = 0; i < tools.length; i++) {
+                const toolId = tools[i].id;
+                const docTool = await DocumentTool.findById(toolId);
+                if (docTool && docTool.signatureData) {
+                    // Update the tool with signature data
+                    tools[i].tool = tools[i].tool || {};
+                    tools[i].tool.value = docTool.signatureData;
+                }
+            }
+        }
 
         resp.status(200).send({
-            tools: documentTools ? documentTools.tools : []
+            data: tools
         });
     } catch (error) {
         console.error("Error fetching document tools:", error);
@@ -1731,10 +1801,10 @@ app.post("/api/recipients/:signatureToken/decline", async (req, resp) => {
 app.post("/api/recipients/:signatureToken/sign", async (req, resp) => {
     try {
         const { signatureToken } = req.params;
-        const { signatureData } = req.body;
+        const { signatures } = req.body;
 
-        if (!signatureData) {
-            return resp.status(400).send({ message: "Signature data is required" });
+        if (!signatures || Object.keys(signatures).length === 0) {
+            return resp.status(400).send({ message: "At least one signature is required" });
         }
 
         const recipient = await DocumentRecipients.findOne({ signatureToken });
@@ -1758,20 +1828,32 @@ app.post("/api/recipients/:signatureToken/sign", async (req, resp) => {
             return resp.status(410).send({ message: "Signing deadline has passed" });
         }
 
-        // Update all recipient signature fields with the signature data
-        const signatureFields = await DocumentTool.findOneAndUpdate(
-            {
-                documentId: recipient.documentId,
-                assignedToRecipientId: recipient._id,
-                toolType: 'recipient_signature',
-            },
-            {
-                signatureData,
-                signedAt: new Date(),
-                value: 'Signed',
-            },
-            { new: true }
-        );
+        // Update each tool with the signature data for this recipient
+        const updatedFields = [];
+        for (const [fieldId, signatureData] of Object.entries(signatures)) {
+            const tool = await DocumentTool.findById(fieldId);
+            if (tool) {
+                // Find the recipient in assignedRecipients array
+                const recipientIndex = tool.assignedRecipients.findIndex(r => r.recipientId.toString() === recipient._id.toString());
+                
+                if (recipientIndex !== -1) {
+                    // Update the specific recipient's signature in the array
+                    tool.assignedRecipients[recipientIndex].signatureData = signatureData;
+                    tool.assignedRecipients[recipientIndex].status = 'signed';
+                    tool.assignedRecipients[recipientIndex].signedAt = new Date();
+                    
+                    // Also update legacy fields if this is the only recipient
+                    if (tool.assignedRecipients.length === 1) {
+                        tool.signatureData = signatureData;
+                        tool.signedAt = new Date();
+                        tool.value = 'Signed';
+                    }
+                    
+                    await tool.save();
+                    updatedFields.push(fieldId);
+                }
+            }
+        }
 
         // Mark recipient as signed
         recipient.status = 'signed';
@@ -1795,14 +1877,16 @@ app.post("/api/recipients/:signatureToken/sign", async (req, resp) => {
                 details: `All ${allRecipients.length} recipients have signed`,
             });
             // Note: This log will have null userId, but documents are tracked by relatedDocumentId
+            await activity.save();
         }
 
-        console.log("Signature submitted for recipient:", recipient._id);
+        console.log("Signature submitted for recipient:", recipient._id, "Updated fields:", updatedFields.length);
         resp.status(200).send({
             message: "Signature submitted successfully",
             data: {
                 recipient,
                 documentCompleted: allSigned,
+                updatedFields: updatedFields.length,
             },
         });
     } catch (error) {

@@ -384,6 +384,9 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                       const isImage = typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
                       const isRecipientSignature = item.tool.label === 'Recipient Signature' || item.tool.label === 'Recipient Initial';
                       
+                      // For recipient signatures, check if signature data exists
+                      const hasSignatureData = isRecipientSignature && item.tool && item.tool.value && typeof item.tool.value === 'string' && item.tool.value.startsWith('data:image');
+                      
                       if (item.tool.label === 'My Signature' || item.tool.label === 'My Initial') {
                         console.log('Rendering signature field:', { 
                           label: item.tool.label, 
@@ -394,11 +397,18 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                         });
                       }
                       
+                      if (isRecipientSignature && hasSignatureData) {
+                        console.log('Rendering recipient signature with data:', { 
+                          label: item.tool.label,
+                          valueLength: typeof item.tool.value === 'string' ? item.tool.value.length : 0
+                        });
+                      }
+                      
                       return (
                         <div
                           key={item.id}
                           data-tool-id={item.id}
-                          className={`dropped-tool ${isImage ? 'signature-image' : ''} ${isRecipientSignature ? 'recipient-signature-field' : ''} ${selectedToolId === item.id ? 'selected' : ''}`}
+                          className={`dropped-tool ${isImage || hasSignatureData ? 'signature-image' : ''} ${isRecipientSignature ? 'recipient-signature-field' : ''} ${selectedToolId === item.id ? 'selected' : ''}`}
                           draggable={!isRecipientMode}
                           onDragStart={(e) => {
                             if (isRecipientMode) {
@@ -422,7 +432,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                             height: (isImage || isRecipientSignature) && item.height ? `${item.height}px` : 'auto',
                           }}
                         >
-                          {isImage ? (
+                          {isImage || hasSignatureData ? (
                             <img 
                               src={item.tool.value} 
                               alt={item.tool.label}
@@ -455,7 +465,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                           )}
                           
                           {/* Resize handles - only for signature/initial images when selected */}
-                          {isImage && selectedToolId === item.id && (
+                          {(isImage || hasSignatureData) && selectedToolId === item.id && (
                             <>
                               <div
                                 className="resize-handle resize-handle-nw"

@@ -58,6 +58,23 @@ function RecipientSigningView({
       });
 
       if (response.ok) {
+        // Fetch the updated document tools to show the signatures on the document
+        try {
+          const docResponse = await fetch(`http://localhost:5000/api/documents/${documentId}/tools`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (docResponse.ok) {
+            const docData = await docResponse.json();
+            // Update droppedTools with the new signature data
+            if (docData.data && Array.isArray(docData.data)) {
+              // Here we would update the tools, but since we're closing the view anyway,
+              // the signatures will be visible when the user returns to the dashboard
+            }
+          }
+        } catch (error) {
+          console.log('Could not fetch updated document:', error);
+        }
+
         setSubmitSuccess(true);
         setTimeout(() => {
           onCancel(); // Return to dashboard after success

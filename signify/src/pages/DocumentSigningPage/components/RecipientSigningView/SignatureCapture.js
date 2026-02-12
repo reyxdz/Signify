@@ -8,6 +8,9 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
   const [signatureMode, setSignatureMode] = useState('saved'); // 'saved', 'draw' or 'upload'
   const [uploadedImage, setUploadedImage] = useState(existingSignature || null);
   const [savedSignature, setSavedSignature] = useState(null);
+  
+  // Detect if this is for an initial field
+  const isInitialField = fieldName && fieldName.toLowerCase().includes('initial');
 
   // Load user's saved signature
   useEffect(() => {
@@ -23,9 +26,16 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
 
         if (response.ok) {
           const data = await response.json();
-          if (data.data && data.data.signature) {
+          if (data.data && data.data.signature && !isInitialField) {
+            // Only load saved signature if not an initial field
             setSavedSignature(data.data.signature);
             setSignatureMode('saved'); // Set 'saved' as default if available
+          } else if (!isInitialField) {
+            // Fall back to draw mode for signature fields without saved signature
+            setSignatureMode('draw');
+          } else {
+            // For initial fields, start with draw mode
+            setSignatureMode('draw');
           }
         }
       } catch (error) {
@@ -35,7 +45,7 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
     };
 
     loadSavedSignature();
-  }, []);
+  }, [isInitialField]);
 
   // Initialize canvas
   useEffect(() => {
@@ -140,7 +150,7 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
         </div>
 
         <div className="signature-modes">
-          {savedSignature && (
+          {savedSignature && !isInitialField && (
             <button
               className={`mode-btn ${signatureMode === 'saved' ? 'active' : ''}`}
               onClick={() => setSignatureMode('saved')}
@@ -153,7 +163,7 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
             className={`mode-btn ${signatureMode === 'draw' ? 'active' : ''}`}
             onClick={() => setSignatureMode('draw')}
           >
-            ✎ Draw Signature
+            ✎ Draw {isInitialField ? 'Initial' : 'Signature'}
           </button>
           <button
             className={`mode-btn ${signatureMode === 'upload' ? 'active' : ''}`}
@@ -163,7 +173,7 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
           </button>
         </div>
 
-        {signatureMode === 'saved' && savedSignature ? (
+        {signatureMode === 'saved' && savedSignature && !isInitialField ? (
           <div className="saved-mode">
             <p className="instruction">Your saved signature:</p>
             <div className="saved-signature-preview">
