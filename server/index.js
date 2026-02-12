@@ -1309,12 +1309,16 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
 
         const documentTools = await DocumentTools.findOne({ documentId: documentId });
         let tools = documentTools ? documentTools.tools : [];
+        
+        // Get current user's email for finding their signature in assignedRecipients
+        const currentUser = await User.findById(userId);
+        const currentUserEmail = currentUser ? currentUser.email : null;
+        
+        console.log(`GET /api/documents/${documentId}/tools - User: ${currentUserEmail}, Found ${tools.length} tools`);
 
         // Enhance tools with signature data from DocumentTool records
         if (tools && tools.length > 0) {
-            // Get current user's email for finding their signature in assignedRecipients
-            const currentUser = await User.findById(userId);
-            const currentUserEmail = currentUser ? currentUser.email : null;
+            console.log(`Looking for signature data for user: ${currentUserEmail}`);
             
             for (let i = 0; i < tools.length; i++) {
                 const toolId = tools[i].id;
@@ -1333,6 +1337,11 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                     
                     if (docTool) {
                         let signatureData = null;
+                        console.log(`Found DocumentTool for toolId ${toolId}:`, {
+                          hasAssignedRecipients: !!docTool.assignedRecipients,
+                          recipientCount: docTool.assignedRecipients?.length || 0,
+                          hasLegacySignatureData: !!docTool.signatureData
+                        });
                         
                         // First check assignedRecipients array for current user's signature
                         if (currentUserEmail && docTool.assignedRecipients && docTool.assignedRecipients.length > 0) {
@@ -1340,6 +1349,7 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                                 r.recipientEmail && r.recipientEmail.toLowerCase() === currentUserEmail.toLowerCase()
                             );
                             if (userRecipient && userRecipient.signatureData) {
+                                console.log(`Found signature data for user ${currentUserEmail} in toolId ${toolId}`);
                                 signatureData = userRecipient.signatureData;
                             }
                         }
@@ -1361,6 +1371,13 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                 }
             }
         }
+
+        // Log the final tools being returned
+        const toolsWithSignatures = tools.filter(t => t.tool && t.tool.value);
+        console.log(`Returning ${tools.length} tools (${toolsWithSignatures.length} with signature data)`);
+        toolsWithSignatures.forEach(t => {
+            console.log(`  - Tool ${t.id} (${t.tool.label}): has signature data (length: ${t.tool.value.length})`);
+        });
 
         resp.status(200).send({
             tools: tools
