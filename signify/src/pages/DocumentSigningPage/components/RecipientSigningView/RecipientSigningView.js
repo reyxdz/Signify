@@ -128,7 +128,9 @@ function RecipientSigningView({
             documentName={documentName}
             documentId={documentId}
             fileData={fileData}
+            onDocumentUpload={() => {}}
             droppedTools={recipientFields}
+            setDroppedTools={() => {}}
             selectedToolId={null}
             setSelectedToolId={() => {}}
             isRecipientMode={true}
