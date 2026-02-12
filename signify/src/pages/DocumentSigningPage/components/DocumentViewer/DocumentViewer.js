@@ -5,7 +5,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import './DocumentViewer.css';
 
-function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload, droppedTools: parentDroppedTools, setDroppedTools: setParentDroppedTools, selectedToolId, setSelectedToolId }) {
+function DocumentViewer({ document, documentName, documentId, fileData, onDocumentUpload, droppedTools: parentDroppedTools, setDroppedTools: setParentDroppedTools, selectedToolId, setSelectedToolId, isRecipientMode = false }) {
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -355,10 +355,11 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
           <div 
             className="document-canvas"
             ref={canvasRef}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
+            onDragOver={isRecipientMode ? undefined : handleDragOver}
+            onDragLeave={isRecipientMode ? undefined : handleDragLeave}
+            onDrop={isRecipientMode ? undefined : handleDrop}
             onClick={(e) => {
+              if (isRecipientMode) return; // Disable selection in recipient mode
               // Deselect when clicking on empty canvas area (not on a tool)
               // Check if the click target is NOT a dropped-tool or its children
               if (!e.target.closest('.dropped-tool')) {
@@ -398,8 +399,12 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
                           key={item.id}
                           data-tool-id={item.id}
                           className={`dropped-tool ${isImage ? 'signature-image' : ''} ${isRecipientSignature ? 'recipient-signature-field' : ''} ${selectedToolId === item.id ? 'selected' : ''}`}
-                          draggable
+                          draggable={!isRecipientMode}
                           onDragStart={(e) => {
+                            if (isRecipientMode) {
+                              e.preventDefault();
+                              return;
+                            }
                             setDraggedToolId(item.id);
                           }}
                           onDragEnd={() => {

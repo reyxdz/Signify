@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { PenTool, FileText, Mail, User } from 'lucide-react';
+import { PenTool, FileText, Mail, User, Send } from 'lucide-react';
 import DocumentViewer from './components/DocumentViewer/DocumentViewer';
 import LeftPanel from './components/LeftPanel/LeftPanel';
 import RightPanel from './components/RightPanel/RightPanel';
+import RecipientSigningView from './components/RecipientSigningView/RecipientSigningView';
+import PublishModal from '../../components/Modals/DocumentSigningModal/PublishModal';
 import './DocumentSigningPage.css';
 
 // Icon mapping for reconstructing tools from database
@@ -28,6 +30,10 @@ function DocumentSigningPage() {
   const [droppedTools, setDroppedTools] = useState([]);
   const [selectedToolId, setSelectedToolId] = useState(null);
   const [isLoadingFromDb, setIsLoadingFromDb] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
+  const [documentData, setDocumentData] = useState(null);
+  const [isRecipient, setIsRecipient] = useState(false);
   const lastSavedToolsRef = useRef(null);
   const documentViewerRef = useRef(null);
 
@@ -40,6 +46,9 @@ function DocumentSigningPage() {
       setDocumentId(id);
       setDocumentName(doc.name || doc.fileName || '');
       setFileData(doc.fileData || null);
+      setDocumentData(doc);
+      setIsPublished(doc.publishedStatus === 'published');
+      setIsRecipient(location.state.isRecipient || false);
       // Store the complete document object including file data
       localStorage.setItem('currentDocument', JSON.stringify({
         id: id,
@@ -292,6 +301,99 @@ function DocumentSigningPage() {
     });
   };
 
+  /**
+   * Extract recipients from recipient-type fields
+   */
+  const getRecipientsFromTools = () => {
+    const recipients = new Map();
+    
+    droppedTools.forEach(tool => {
+      if (tool.assignedRecipients && Array.isArray(tool.assignedRecipients)) {
+        tool.assignedRecipients.forEach(recipient => {
+          if (!recipients.has(recipient.recipientEmail)) {
+            recipients.set(recipient.recipientEmail, {
+              recipientEmail: recipient.recipientEmail,
+              recipientName: recipient.recipientName,
+              recipientId: recipient.recipientId,
+            });
+          }
+        });
+      }
+    });
+
+    return Array.from(recipients.values());
+  };
+
+  /**
+   * Handle publish button click
+   */
+  const handlePublishClick = () => {
+    const recipients = getRecipientsFromTools();
+    if (recipients.length === 0) {
+      alert('Please assign at least one recipient to a field before publishing');
+      return;
+    }
+    setShowPublishModal(true);
+  };
+
+  /**
+   * Handle publish confirmation
+   */
+  const handlePublish = async (recipients, expiresIn) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/documents/${documentId}/publish`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ recipients, expiresIn }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to publish document');
+      }
+
+      const data = await response.json();
+      setIsPublished(true);
+      setDocumentData({ ...documentData, publishedStatus: 'published', publishLink: data.publishLink });
+      console.log('Document published successfully');
+    } catch (error) {
+      console.error('Error publishing document:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Handle unpublish
+   */
+  const handleUnpublish = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/documents/${documentId}/unpublish`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to unpublish document');
+      }
+
+      setIsPublished(false);
+      setShowPublishModal(false);
+      console.log('Document unpublished successfully');
+    } catch (error) {
+      console.error('Error unpublishing document:', error);
+      throw error;
+    }
+  };
+
   // If no document is set up, show a loading state
   if (!documentId && !document) {
     return (
@@ -302,6 +404,25 @@ function DocumentSigningPage() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // If recipient mode, show recipient-specific view
+  if (isRecipient) {
+    return (
+      <RecipientSigningView
+        documentName={documentName}
+        documentId={documentId}
+        fileData={fileData}
+        droppedTools={droppedTools}
+        onSign={(signatures) => {
+          console.log('Signatures submitted:', signatures);
+          // Signature submission is handled in RecipientSigningView
+        }}
+        onCancel={() => {
+          navigate('/dashboard');
+        }}
+      />
     );
   }
 
@@ -316,7 +437,20 @@ function DocumentSigningPage() {
           {/* Center space reserved for future actions */}
         </div>
         <div className="header-right">
-          <button className="preview-btn" onClick={handlePreview}>Preview</button>
+          {!isRecipient ? (
+            <>
+              <button className="publish-btn" onClick={handlePublishClick}>
+                <Send size={18} />
+                {isPublished ? 'Published' : 'Publish'}
+              </button>
+              <button className="preview-btn" onClick={handlePreview}>Preview</button>
+            </>
+          ) : (
+            <button className="publish-btn" onClick={() => alert('Signing feature coming soon')}>
+              <Send size={18} />
+              Sign Document
+            </button>
+          )}
           <h2 className="header-filename">{documentName}</h2>
         </div>
       </div>
@@ -342,6 +476,18 @@ function DocumentSigningPage() {
           documentId={documentId}
         />
       </div>
+
+      {/* Publish Modal */}
+      <PublishModal
+        isOpen={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        documentName={documentName}
+        recipients={getRecipientsFromTools()}
+        isPublished={isPublished}
+        onPublish={handlePublish}
+        onUnpublish={handleUnpublish}
+        documentId={documentId}
+      />
     </div>
   );
 }

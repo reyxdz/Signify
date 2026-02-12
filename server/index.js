@@ -13,8 +13,19 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/signify', {}).then(() => {
+mongoose.connect('mongodb://localhost:27017/signify', {}).then(async () => {
     console.log('Connected to signify database');
+    
+    // Fix: Drop and recreate the publishLink index to ensure sparse constraint
+    try {
+        await mongoose.connection.collection('documents').dropIndex('publishLink_1');
+        console.log('Dropped old publishLink index');
+    } catch (err) {
+        // Index might not exist, which is fine
+        if (err.code !== 27) {
+            console.log('Note: publishLink index did not exist or could not be dropped');
+        }
+    }
 }).catch((err) => {
     console.log('Error connecting to database', err);
 });
@@ -159,6 +170,29 @@ const DocumentSchema = new mongoose.Schema({
     sharedWith: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'users',
+    }],
+    // Publishing information
+    publishedStatus: {
+        type: String,
+        enum: ['draft', 'published', 'expired'],
+        default: 'draft',
+    },
+    publishedAt: {
+        type: Date,
+        default: null,
+    },
+    publishLink: {
+        type: String,
+        default: null,
+    },
+    publishLinkExpiry: {
+        type: Date,
+        default: null,
+    },
+    publishedRecipients: [{
+        recipientEmail: String,
+        recipientName: String,
+        notifiedAt: Date,
     }],
 });
 
@@ -454,7 +488,6 @@ const ActivitySchema = new mongoose.Schema({
 const Activity = mongoose.model('activities', ActivitySchema);
 
 // Express setup
-app.use(express.json());
 app.use(cors({
     origin: 'http://localhost:3000'
 }));
@@ -711,36 +744,61 @@ app.get("/api/documents/recent", verifyToken, async (req, resp) => {
 app.get("/api/documents/all", verifyToken, async (req, resp) => {
     try {
         const userId = req.userId;
-        const user = await User.findById(userId).select('email');
-        const userEmail = user?.email;
 
         // Get owned documents
         const ownedDocs = await Document.find({ userId })
-            .sort({ modifiedAt: -1 })
-            .select('_id name fileName status modifiedAt createdAt uploadedAt size userId');
-
-        // Get documents where user is a recipient
-        const recipientDocs = await DocumentRecipients.find({ recipientEmail: userEmail })
-            .populate('documentId', '_id name fileName status modifiedAt createdAt uploadedAt size userId')
             .sort({ modifiedAt: -1 });
 
-        // Format recipient documents
-        const recipientDocsFormatted = recipientDocs.map(r => ({
-            ...r.documentId.toObject(),
-            recipientStatus: r.status,
-            recipientOrder: r.order,
-        }));
-
         resp.status(200).send({
-            message: "All documents retrieved successfully",
-            data: {
-                owned: ownedDocs,
-                recipient: recipientDocsFormatted,
-            },
+            message: "Documents retrieved successfully",
+            data: ownedDocs,
         });
     } catch (error) {
-        console.error("Error fetching all documents:", error);
+        console.error("Error fetching documents:", error);
         resp.status(500).send({ message: "Error fetching documents", error: error.message });
+    }
+});
+
+// Get documents shared with the user (where user is a recipient)
+app.get("/api/documents/shared-with-me", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const user = await User.findById(userId).select('email');
+        const userEmail = user?.email?.toLowerCase();
+
+        console.log("Fetching shared documents for user email:", userEmail);
+
+        // Get documents where user is a recipient (case-insensitive)
+        const recipientDocs = await DocumentRecipients.find({ 
+            recipientEmail: { $regex: `^${userEmail}$`, $options: 'i' }
+        })
+            .populate('documentId', '_id name fileName status modifiedAt createdAt publishedAt size userId')
+            .populate('documentId.userId', 'firstName lastName email')
+            .sort({ modifiedAt: -1 });
+
+        console.log("Found recipient documents:", recipientDocs.length);
+
+        // Format recipient documents
+        const recipientDocsFormatted = recipientDocs.map(r => {
+            const docObj = r.documentId.toObject();
+            const ownerName = docObj.userId?.firstName && docObj.userId?.lastName 
+                ? `${docObj.userId.firstName} ${docObj.userId.lastName}`
+                : docObj.userId?.email || 'Unknown';
+            
+            return {
+                ...docObj,
+                recipientStatus: r.status,
+                ownerName: ownerName,
+            };
+        });
+
+        resp.status(200).send({
+            message: "Shared documents retrieved successfully",
+            data: recipientDocsFormatted,
+        });
+    } catch (error) {
+        console.error("Error fetching shared documents:", error);
+        resp.status(500).send({ message: "Error fetching shared documents", error: error.message });
     }
 });
 
@@ -771,14 +829,34 @@ app.post("/api/documents/upload", verifyToken, async (req, resp) => {
         const userId = req.userId;
         const { name, fileName, fileType, size, fileData } = req.body;
 
+        console.log("Upload request received:", { 
+            name, 
+            fileName, 
+            fileType, 
+            size, 
+            hasFileData: !!fileData, 
+            fileDataLength: fileData ? fileData.length : 0,
+            fileDataType: typeof fileData
+        });
+
         if (!name || !fileName) {
             return resp.status(400).send({ message: "Document name and fileName are required" });
         }
 
+        if (!fileData) {
+            console.warn("WARNING: No fileData provided in upload request");
+            return resp.status(400).send({ message: "File data is required" });
+        }
+
         // Convert base64 to Buffer if fileData is provided
         let binaryData = null;
-        if (fileData) {
+        try {
+            console.log("Converting fileData from base64 to buffer, input length:", fileData.length);
             binaryData = Buffer.from(fileData, 'base64');
+            console.log("Converted buffer size:", binaryData.length);
+        } catch (err) {
+            console.error("Error converting base64 to buffer:", err);
+            return resp.status(400).send({ message: "Invalid file data format", error: err.message });
         }
 
         const document = new Document({
@@ -791,7 +869,9 @@ app.post("/api/documents/upload", verifyToken, async (req, resp) => {
             status: 'draft',
         });
 
+        console.log("Saving document to database...");
         const savedDoc = await document.save();
+        console.log("Document saved successfully:", savedDoc._id, "with fileData size:", savedDoc.fileData ? savedDoc.fileData.length : 0);
 
         // Create activity log entry
         const activity = new Activity({
@@ -914,45 +994,57 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
         const { documentId } = req.params;
         const { signatures } = req.body;
 
-        if (!signatures || signatures.length === 0) {
+        if (!signatures || Object.keys(signatures).length === 0) {
             return resp.status(400).send({ message: "At least one signature is required" });
         }
 
-        // Update document status to signed
-        const updatedDoc = await Document.findByIdAndUpdate(
-            documentId,
-            { 
-                status: 'signed',
-                modifiedAt: new Date(),
-            },
-            { new: true }
-        );
-
-        if (!updatedDoc) {
+        const document = await Document.findById(documentId);
+        if (!document) {
             return resp.status(404).send({ message: "Document not found" });
         }
 
-        // Verify document belongs to user
-        if (updatedDoc.userId.toString() !== userId.toString()) {
-            return resp.status(403).send({ message: "Unauthorized to sign this document" });
+        // Get user email for recipient matching
+        const user = await User.findById(userId);
+        if (!user) {
+            return resp.status(404).send({ message: "User not found" });
         }
+
+        // Check if user is recipient
+        const recipient = await DocumentRecipients.findOne({
+            documentId: documentId,
+            recipientEmail: { $regex: `^${user.email}$`, $options: 'i' }
+        });
+
+        if (!recipient) {
+            return resp.status(403).send({ message: "Unauthorized to sign this document - not a recipient" });
+        }
+
+        // Update recipient status to signed
+        recipient.status = 'signed';
+        recipient.signedAt = new Date();
+        recipient.lastAccessedAt = new Date();
+        recipient.accessCount = (recipient.accessCount || 0) + 1;
+        await recipient.save();
 
         // Create activity log
         const activity = new Activity({
             userId,
             type: 'document_signed',
-            title: 'Document signed successfully',
-            description: `Signed document: ${updatedDoc.name}`,
-            details: `${signatures.length} signature(s) added`,
+            title: `Signed document: ${document.name}`,
+            description: `Recipient ${user.email} signed the document`,
+            details: Object.keys(signatures).length + ' field(s) signed',
             relatedDocumentId: documentId,
         });
 
         await activity.save();
 
-        console.log("Document signed:", documentId, "User:", userId);
+        console.log("Document signed by recipient:", documentId, "Recipient:", user.email);
         resp.status(200).send({
             message: "Document signed successfully",
-            data: updatedDoc,
+            data: {
+                status: recipient.status,
+                signedAt: recipient.signedAt,
+            }
         });
     } catch (error) {
         console.error("Error signing document:", error);
@@ -972,15 +1064,45 @@ app.get("/api/documents/:documentId", verifyToken, async (req, resp) => {
             return resp.status(404).send({ message: "Document not found" });
         }
 
-        // Verify document belongs to user or is shared with user
-        if (document.userId.toString() !== userId.toString() && !document.sharedWith.includes(userId)) {
+        console.log("Document fetch - has fileData:", !!document.fileData, "fileData type:", typeof document.fileData);
+
+        // Verify document belongs to user or is shared with user or user is recipient
+        let hasAccess = document.userId.toString() === userId.toString() || document.sharedWith.includes(userId);
+        
+        // Check if user is a recipient
+        if (!hasAccess) {
+            const user = await User.findById(userId);
+            if (user) {
+                const recipient = await DocumentRecipients.findOne({
+                    documentId: documentId,
+                    recipientEmail: { $regex: `^${user.email}$`, $options: 'i' }
+                });
+                hasAccess = !!recipient;
+            }
+        }
+        
+        if (!hasAccess) {
             return resp.status(403).send({ message: "Unauthorized to access this document" });
         }
 
-        // Convert Binary fileData to base64 for JSON transmission
+        // Convert fileData to base64 for JSON transmission
         const documentObj = document.toObject();
-        if (documentObj.fileData && Buffer.isBuffer(documentObj.fileData)) {
-            documentObj.fileData = documentObj.fileData.toString('base64');
+        if (documentObj.fileData) {
+            console.log("Converting fileData to base64");
+            // Handle both Buffer and Mongoose Binary types
+            let binaryData = documentObj.fileData;
+            if (typeof binaryData === 'object' && binaryData.buffer) {
+                binaryData = binaryData.buffer;
+            }
+            if (Buffer.isBuffer(binaryData)) {
+                documentObj.fileData = binaryData.toString('base64');
+                console.log("fileData converted to base64, length:", documentObj.fileData.length);
+            } else {
+                console.log("WARNING: fileData is not a buffer, type:", typeof binaryData);
+                documentObj.fileData = null;
+            }
+        } else {
+            console.log("No fileData found in document");
         }
 
         resp.status(200).send({
@@ -1047,9 +1169,27 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
         const userId = req.userId;
         const { documentId } = req.params;
 
-        // Verify document belongs to user
+        // Verify document belongs to user or user is recipient
         const document = await Document.findById(documentId);
-        if (!document || document.userId.toString() !== userId) {
+        if (!document) {
+            return resp.status(403).send({ message: "Not authorized to access this document" });
+        }
+
+        let hasAccess = document.userId.toString() === userId.toString();
+        
+        // Check if user is a recipient
+        if (!hasAccess) {
+            const user = await User.findById(userId);
+            if (user) {
+                const recipient = await DocumentRecipients.findOne({
+                    documentId: documentId,
+                    recipientEmail: { $regex: `^${user.email}$`, $options: 'i' }
+                });
+                hasAccess = !!recipient;
+            }
+        }
+        
+        if (!hasAccess) {
             return resp.status(403).send({ message: "Not authorized to access this document" });
         }
 
@@ -1207,6 +1347,132 @@ app.delete("/api/documents/:documentId", verifyToken, async (req, resp) => {
     } catch (error) {
         console.error("Error deleting document:", error);
         resp.status(500).send({ message: "Error deleting document", error: error.message });
+    }
+});
+
+// Publish document to recipients
+// POST /api/documents/:documentId/publish
+app.post("/api/documents/:documentId/publish", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId } = req.params;
+        const { recipients, expiresIn = 30 } = req.body; // expiresIn in days
+
+        if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+            return resp.status(400).send({ message: "Recipients array is required" });
+        }
+
+        const document = await Document.findById(documentId);
+        if (!document) {
+            return resp.status(404).send({ message: "Document not found" });
+        }
+
+        if (document.userId.toString() !== userId) {
+            return resp.status(403).send({ message: "Not authorized to publish this document" });
+        }
+
+        // Generate unique publish link (using document ID + random token)
+        const publishToken = require('crypto').randomBytes(16).toString('hex');
+        const publishLink = `${publishToken}`;
+
+        // Set expiration date
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + expiresIn);
+
+        // Update document with publishing info
+        document.publishedStatus = 'published';
+        document.publishedAt = new Date();
+        document.publishLink = publishLink;
+        document.publishLinkExpiry = expiryDate;
+        document.status = 'pending_signatures';
+        document.expiresAt = expiryDate;
+        document.publishedRecipients = recipients.map(r => ({
+            recipientEmail: r.recipientEmail,
+            recipientName: r.recipientName,
+            notifiedAt: new Date(),
+        }));
+
+        await document.save();
+
+        // Create DocumentRecipients records for each recipient
+        for (const recipient of recipients) {
+            const signatureToken = require('crypto').randomBytes(16).toString('hex');
+            const docRecipient = new DocumentRecipients({
+                documentId: documentId,
+                recipientEmail: recipient.recipientEmail.toLowerCase(),
+                recipientName: recipient.recipientName,
+                signatureToken: signatureToken,
+                status: 'pending',
+                order: recipients.indexOf(recipient),
+            });
+            await docRecipient.save();
+        }
+
+        // Create activity log
+        const activity = new Activity({
+            userId,
+            type: 'document_shared',
+            title: 'Document published',
+            description: `Published document to ${recipients.length} recipient(s)`,
+            details: `Recipients: ${recipients.map(r => r.recipientEmail).join(', ')}`,
+            relatedDocumentId: documentId,
+        });
+
+        await activity.save();
+
+        resp.status(200).send({
+            message: "Document published successfully",
+            publishLink: publishLink,
+            expiresAt: expiryDate,
+            recipients: recipients,
+        });
+    } catch (error) {
+        console.error("Error publishing document:", error);
+        resp.status(500).send({ message: "Error publishing document", error: error.message });
+    }
+});
+
+// Unpublish document (expire it)
+// POST /api/documents/:documentId/unpublish
+app.post("/api/documents/:documentId/unpublish", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId } = req.params;
+
+        const document = await Document.findById(documentId);
+        if (!document) {
+            return resp.status(404).send({ message: "Document not found" });
+        }
+
+        if (document.userId.toString() !== userId) {
+            return resp.status(403).send({ message: "Not authorized to unpublish this document" });
+        }
+
+        // Mark as expired
+        document.publishedStatus = 'expired';
+        document.status = 'expired';
+        document.publishLinkExpiry = new Date(); // Expire immediately
+        document.expiresAt = new Date();
+
+        await document.save();
+
+        // Create activity log
+        const activity = new Activity({
+            userId,
+            type: 'document_signed',
+            title: 'Document unpublished',
+            description: `Unpublished document and marked recipients' copies as expired`,
+            relatedDocumentId: documentId,
+        });
+
+        await activity.save();
+
+        resp.status(200).send({
+            message: "Document unpublished successfully",
+        });
+    } catch (error) {
+        console.error("Error unpublishing document:", error);
+        resp.status(500).send({ message: "Error unpublishing document", error: error.message });
     }
 });
 

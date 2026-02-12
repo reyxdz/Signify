@@ -3,8 +3,7 @@ import { Eye, MoreVertical, FileText, Upload, Search } from 'lucide-react';
 import '../Sections.css';
 
 const Documents = () => {
-  const [ownedDocuments, setOwnedDocuments] = useState([]);
-  const [recipientDocuments, setRecipientDocuments] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,8 +25,7 @@ const Documents = () => {
 
       if (response.ok) {
         const result = await response.json();
-        setOwnedDocuments(result.data.owned || []);
-        setRecipientDocuments(result.data.recipient || []);
+        setDocuments(result.data || []);
       } else {
         setError('Failed to fetch documents');
       }
@@ -76,10 +74,9 @@ const Documents = () => {
     );
   };
 
-  const filteredOwned = filterDocuments(ownedDocuments);
-  const filteredRecipient = filterDocuments(recipientDocuments);
+  const filteredDocs = filterDocuments(documents);
 
-  const DocumentRow = ({ doc, isRecipient = false }) => (
+  const DocumentRow = ({ doc }) => (
     <div key={doc._id} className="table-row">
       <div className="col-name">
         <FileText size={18} className="file-icon" />
@@ -88,9 +85,8 @@ const Documents = () => {
       <div className="col-size">{formatSize(doc.size)}</div>
       <div className="col-date">{formatDate(doc.modifiedAt || doc.createdAt)}</div>
       <div className="col-status">
-        <span className={`status-badge ${isRecipient ? doc.recipientStatus : doc.status}`}>
-          {(isRecipient ? doc.recipientStatus : doc.status).charAt(0).toUpperCase() + 
-           (isRecipient ? doc.recipientStatus : doc.status).slice(1)}
+        <span className={`status-badge ${doc.status}`}>
+          {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
         </span>
       </div>
       <div className="col-actions">
@@ -138,66 +134,33 @@ const Documents = () => {
           <p>Loading documents...</p>
         </div>
       ) : (
-        <>
-          {/* Your Documents Section */}
-          <div className="documents-section">
-            <div className="section-title">
-              <h2>Your Documents</h2>
-              <span className="doc-count">{filteredOwned.length}</span>
-            </div>
-            
-            {filteredOwned.length === 0 ? (
-              <div className="empty-section">
-                <FileText size={32} />
-                <p>No documents yet</p>
-                <small>Upload your first document to get started</small>
-              </div>
-            ) : (
-              <div className="documents-table">
-                <div className="table-header">
-                  <div className="col-name">Name</div>
-                  <div className="col-size">Size</div>
-                  <div className="col-date">Modified</div>
-                  <div className="col-status">Status</div>
-                  <div className="col-actions">Actions</div>
-                </div>
-                {filteredOwned.map(doc => (
-                  <DocumentRow key={doc._id} doc={doc} isRecipient={false} />
-                ))}
-              </div>
-            )}
+        <div className="documents-section">
+          <div className="section-title">
+            <h2>Your Documents</h2>
+            <span className="doc-count">{filteredDocs.length}</span>
           </div>
-
-          {/* Documents Where User Is Recipient */}
-          {recipientDocuments.length > 0 && (
-            <div className="documents-section">
-              <div className="section-title">
-                <h2>Documents for Signature</h2>
-                <span className="doc-count">{filteredRecipient.length}</span>
+          
+          {filteredDocs.length === 0 ? (
+            <div className="empty-section">
+              <FileText size={32} />
+              <p>No documents yet</p>
+              <small>Upload your first document to get started</small>
+            </div>
+          ) : (
+            <div className="documents-table">
+              <div className="table-header">
+                <div className="col-name">Name</div>
+                <div className="col-size">Size</div>
+                <div className="col-date">Modified</div>
+                <div className="col-status">Status</div>
+                <div className="col-actions">Actions</div>
               </div>
-
-              {filteredRecipient.length === 0 ? (
-                <div className="empty-section">
-                  <FileText size={32} />
-                  <p>No documents awaiting action</p>
-                </div>
-              ) : (
-                <div className="documents-table">
-                  <div className="table-header">
-                    <div className="col-name">Name</div>
-                    <div className="col-size">Size</div>
-                    <div className="col-date">Modified</div>
-                    <div className="col-status">Status</div>
-                    <div className="col-actions">Actions</div>
-                  </div>
-                  {filteredRecipient.map(doc => (
-                    <DocumentRow key={doc._id} doc={doc} isRecipient={true} />
-                  ))}
-                </div>
-              )}
+              {filteredDocs.map(doc => (
+                <DocumentRow key={doc._id} doc={doc} />
+              ))}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
