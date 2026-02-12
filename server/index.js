@@ -1049,7 +1049,17 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
         const updatedFields = [];
         for (const [fieldId, signatureData] of Object.entries(signatures)) {
             console.log(`Processing fieldId: ${fieldId}`);
-            const tool = await DocumentTool.findById(fieldId);
+            // Look up by toolId field first (fieldId is the tool.id from frontend)
+            let tool = await DocumentTool.findOne({
+                documentId: documentId,
+                toolId: fieldId
+            });
+            
+            // Fall back to finding by _id if it's a valid ObjectId
+            if (!tool && mongoose.Types.ObjectId.isValid(fieldId)) {
+                tool = await DocumentTool.findById(fieldId);
+            }
+            
             if (tool) {
                 console.log(`Found DocumentTool ${fieldId}, checking assignedRecipients:`, {
                     recipientCount: tool.assignedRecipients.length,
