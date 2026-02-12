@@ -100,14 +100,13 @@ function DocumentSigningPage() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Raw tools from API:', data.tools);
         if (data.tools && data.tools.length > 0) {
           // Reconstruct tools with icons since icons can't be stored in database
           const reconstructedTools = data.tools.map(item => {
             // Initialize dimensions for signature/initial images and recipient signature/initial if not set
             const isSignatureImage = item.tool.label === 'My Signature' || item.tool.label === 'My Initial';
             const isRecipientSignature = item.tool.label === 'Recipient Signature' || item.tool.label === 'Recipient Initial';
-            const result = {
+            return {
               ...item,
               tool: {
                 ...item.tool,
@@ -120,14 +119,9 @@ function DocumentSigningPage() {
               ...(isRecipientSignature && !item.width && { width: 150 }),
               ...(isRecipientSignature && !item.height && { height: 60 }),
             };
-            if (result.tool.value) {
-              console.log(`Tool ${result.id} has value:`, result.tool.value.substring(0, 50));
-            }
-            return result;
           });
           
           setDroppedTools(reconstructedTools);
-          console.log('Loaded tools from database for document:', docId, reconstructedTools);
           // Store what we just loaded so we don't immediately re-save it
           lastSavedToolsRef.current = JSON.stringify(
             reconstructedTools.map(item => ({

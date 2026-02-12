@@ -26,30 +26,15 @@ function RecipientSigningView({
   // Initialize recipientSignatures from tools that already have signature data
   useEffect(() => {
     const initialSignatures = {};
-    console.log('RecipientSigningView - recipientFields:', recipientFields);
-    
     recipientFields.forEach(tool => {
-      console.log(`Checking tool ${tool.id}:`, {
-        hasToolObj: !!tool.tool,
-        hasValue: !!tool.tool?.value,
-        valueType: typeof tool.tool?.value,
-        valueLength: tool.tool?.value ? tool.tool.value.length : 0,
-        valuePreview: tool.tool?.value ? tool.tool.value.substring(0, 50) : 'none',
-        startsWithDataImage: tool.tool?.value && typeof tool.tool.value === 'string' ? tool.tool.value.startsWith('data:image') : false
-      });
-      
       // Check if the tool already has signature data (from database)
       if (tool.tool && tool.tool.value && typeof tool.tool.value === 'string' && tool.tool.value.startsWith('data:image')) {
-        console.log(`Found signature data for tool ${tool.id}`);
         initialSignatures[tool.id] = tool.tool.value;
       }
     });
     
-    console.log('Initial signatures found:', Object.keys(initialSignatures).length);
-    
     // Only update state if there are signatures to set
     if (Object.keys(initialSignatures).length > 0) {
-      console.log('Setting initial signatures:', Object.keys(initialSignatures));
       setRecipientSignatures(prev => ({
         ...initialSignatures,
         ...prev // Keep any new signatures they've added in this session

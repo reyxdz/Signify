@@ -1294,6 +1294,55 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
             { upsert: true, new: true }
         );
 
+        // Create or update DocumentTool records for recipient fields
+        // This ensures we have the infrastructure to store signatures
+        const recipientFields = tools.filter(tool => 
+            tool.tool && (tool.tool.label === 'Recipient Signature' || tool.tool.label === 'Recipient Initial')
+        );
+        
+        console.log(`Creating DocumentTool records for ${recipientFields.length} recipient fields`);
+        
+        for (const field of recipientFields) {
+            // Get all recipients for this document
+            const recipients = await DocumentRecipients.find({ documentId: documentId });
+            
+            // Check if DocumentTool already exists for this toolId
+            let docTool = await DocumentTool.findOne({
+                documentId: documentId,
+                toolId: field.id
+            });
+            
+            if (!docTool) {
+                // Create new DocumentTool with assignedRecipients
+                const assignedRecipients = recipients.map(recipient => ({
+                    recipientId: recipient._id,
+                    recipientEmail: recipient.recipientEmail,
+                    status: 'pending',
+                    signatureData: null,
+                }));
+                
+                docTool = new DocumentTool({
+                    documentId: documentId,
+                    toolId: field.id,
+                    toolType: field.tool.label === 'Recipient Signature' ? 'recipient_signature' : 'recipient_initial',
+                    toolLabel: field.tool.label,
+                    position: {
+                        x: field.x,
+                        y: field.y,
+                        page: field.page || 1,
+                    },
+                    dimensions: {
+                        width: field.width || 150,
+                        height: field.height || 60,
+                    },
+                    assignedRecipients: assignedRecipients,
+                });
+                
+                await docTool.save();
+                console.log(`Created DocumentTool for field ${field.id} with ${assignedRecipients.length} recipients`);
+            }
+        }
+
         console.log("Document tools saved for:", documentId);
         resp.status(200).send({
             message: "Tools saved successfully",
