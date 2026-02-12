@@ -98,7 +98,8 @@
 }
 
 .draw-mode,
-.upload-mode {
+.upload-mode,
+.saved-mode {
   padding: 24px;
   flex: 1;
   display: flex;
@@ -191,6 +192,31 @@
   max-height: 150px;
   border-radius: 4px;
   object-fit: contain;
+}
+
+.saved-signature-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  border: 2px dashed #d1d5db;
+  border-radius: 6px;
+  background: #f9fafb;
+  min-height: 200px;
+}
+
+.saved-signature-preview img {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+}
+
+.mode-note {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  margin: 0;
+  font-style: italic;
 }
 
 .signature-actions {

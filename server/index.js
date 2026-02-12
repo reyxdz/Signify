@@ -660,6 +660,25 @@ app.post("/api/users/signature", verifyToken, async (req, resp) => {
     }
 });
 
+// API to get user's signature
+app.get("/api/users/signature", verifyToken, async (req, resp) => {
+    try {
+        const signature = await Signature.findOne({ userId: req.userId });
+        
+        if (!signature) {
+            return resp.status(404).send({ message: "No signature found for this user" });
+        }
+
+        resp.status(200).send({
+            message: "Signature retrieved successfully",
+            data: signature
+        });
+    } catch (error) {
+        console.error("Error fetching signature:", error);
+        resp.status(500).send({ message: "Error fetching signature", error: error.message });
+    }
+});
+
 // API to get current user data
 app.get("/api/users/profile", verifyToken, async (req, resp) => {
     try {

@@ -138,11 +138,13 @@
 }
 
 .preview-tool-type {
-  /* Removed default styling to allow inline styles for customization */
+  /* Inherits styling from parent */
+  display: inherit;
 }
 
 .preview-tool-value {
-  /* Allow inline styles to take precedence for font customization */
+  /* Inherits styling from parent */
+  display: inherit;
 }
 
 /* Recipient Signature/Initial Fields - container with placeholder */

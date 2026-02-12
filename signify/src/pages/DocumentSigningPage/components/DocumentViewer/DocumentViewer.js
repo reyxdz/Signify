@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { Document, Page } from 'react-pdf';
 import { Upload, ChevronUp, ChevronDown } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -19,7 +19,7 @@ function DocumentViewer({ document, documentName, documentId, fileData, onDocume
   const [isResizing, setIsResizing] = useState(false);
 
   // Use parent tools directly instead of local state
-  const droppedTools = parentDroppedTools || [];
+  const droppedTools = useMemo(() => parentDroppedTools || [], [parentDroppedTools]);
   const updateTools = setParentDroppedTools;
 
   // Keep droppedTools in ref for use in event listeners

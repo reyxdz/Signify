@@ -58,14 +58,16 @@ const Documents = () => {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const getStatusClass = (status) => {
-    switch(status) {
-      case 'signed': return 'signed';
-      case 'pending': return 'pending';
-      case 'draft': return 'draft';
-      default: return 'draft';
-    }
-  };
+  // Helper function to get CSS class for document status
+  // Kept for future use when document status badges are implemented
+  // const getStatusClass = (status) => {
+  //   switch(status) {
+  //     case 'signed': return 'signed';
+  //     case 'pending': return 'pending';
+  //     case 'draft': return 'draft';
+  //     default: return 'draft';
+  //   }
+  // };
 
   const filterDocuments = (docs) => {
     if (!searchQuery.trim()) return docs;

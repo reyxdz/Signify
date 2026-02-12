@@ -1,15 +1,44 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import './SignatureCapture.css';
 
 function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [signatureMode, setSignatureMode] = useState('draw'); // 'draw' or 'upload'
+  const [signatureMode, setSignatureMode] = useState('saved'); // 'saved', 'draw' or 'upload'
   const [uploadedImage, setUploadedImage] = useState(existingSignature || null);
+  const [savedSignature, setSavedSignature] = useState(null);
+
+  // Load user's saved signature
+  useEffect(() => {
+    const loadSavedSignature = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/users/signature', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.data && data.data.signature) {
+            setSavedSignature(data.data.signature);
+            setSignatureMode('saved'); // Set 'saved' as default if available
+          }
+        }
+      } catch (error) {
+        console.error('Error loading saved signature:', error);
+        setSignatureMode('draw'); // Fall back to draw mode
+      }
+    };
+
+    loadSavedSignature();
+  }, []);
 
   // Initialize canvas
-  React.useEffect(() => {
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) {
       const context = canvas.getContext('2d');
@@ -83,17 +112,19 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
   const handleSubmit = () => {
     let signatureData;
     
-    if (signatureMode === 'draw') {
+    if (signatureMode === 'saved') {
+      signatureData = savedSignature;
+    } else if (signatureMode === 'draw') {
       const canvas = canvasRef.current;
       signatureData = canvas.toDataURL('image/png');
-    } else {
+    } else if (signatureMode === 'upload') {
       signatureData = uploadedImage;
     }
 
     if (signatureData) {
       onCapture(signatureData);
     } else {
-      alert('Please draw or upload a signature first');
+      alert('Please select or draw a signature first');
     }
   };
 
@@ -109,6 +140,15 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
         </div>
 
         <div className="signature-modes">
+          {savedSignature && (
+            <button
+              className={`mode-btn ${signatureMode === 'saved' ? 'active' : ''}`}
+              onClick={() => setSignatureMode('saved')}
+              title="Use your pre-saved signature"
+            >
+              ✓ My Signature
+            </button>
+          )}
           <button
             className={`mode-btn ${signatureMode === 'draw' ? 'active' : ''}`}
             onClick={() => setSignatureMode('draw')}
@@ -123,7 +163,15 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
           </button>
         </div>
 
-        {signatureMode === 'draw' ? (
+        {signatureMode === 'saved' && savedSignature ? (
+          <div className="saved-mode">
+            <p className="instruction">Your saved signature:</p>
+            <div className="saved-signature-preview">
+              <img src={savedSignature} alt="Your saved signature" />
+            </div>
+            <p className="mode-note">This is your pre-saved signature from your profile settings.</p>
+          </div>
+        ) : signatureMode === 'draw' ? (
           <div className="draw-mode">
             <p className="instruction">Draw your signature in the box below:</p>
             <canvas
@@ -141,7 +189,7 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
               Clear
             </button>
           </div>
-        ) : (
+        ) : signatureMode === 'upload' ? (
           <div className="upload-mode">
             <div className="upload-area">
               <input
@@ -163,7 +211,7 @@ function SignatureCapture({ fieldName, onCapture, onCancel, existingSignature })
               </label>
             </div>
           </div>
-        )}
+        ) : null}
 
         <div className="signature-actions">
           <button className="cancel-btn" onClick={onCancel}>

@@ -317,7 +317,8 @@
 
 /* Signature/Initial Image Styles - same design as all tools */
 .dropped-tool.signature-image {
-  /* Uses same styling as .dropped-tool */
+  /* Inherits all styles from .dropped-tool */
+  box-sizing: border-box;
 }
 
 /* Recipient Signature/Initial Fields - container with placeholder */

@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Send, Download, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Send, Check } from 'lucide-react';
 import DocumentViewer from '../DocumentViewer/DocumentViewer';
 import SignatureCapture from './SignatureCapture';
 import './RecipientSigningView.css';
@@ -20,7 +20,7 @@ function RecipientSigningView({
 
   // Get recipient fields (fields that start with "Recipient")
   const recipientFields = droppedTools.filter(tool => 
-    tool.name.startsWith('Recipient')
+    tool?.tool?.label && tool.tool.label.startsWith('Recipient')
   );
 
   const handleSignField = (field) => {
@@ -145,7 +145,7 @@ function RecipientSigningView({
                 recipientFields.map(field => (
                   <div key={field.id} className="field-item">
                     <div className="field-info">
-                      <span className="field-name">{field.name}</span>
+                      <span className="field-name">{field.tool.label}</span>
                       {recipientSignatures[field.id] ? (
                         <span className="field-status signed">✓ Signed</span>
                       ) : (
@@ -188,7 +188,7 @@ function RecipientSigningView({
       {/* Signature Capture Modal */}
       {showSignatureModal && currentField && (
         <SignatureCapture
-          fieldName={currentField.name}
+          fieldName={currentField.tool.label}
           onCapture={handleCaptureSignature}
           onCancel={() => {
             setShowSignatureModal(false);
