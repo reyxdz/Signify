@@ -1399,6 +1399,8 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
         const documentTools = await DocumentTools.findOne({ documentId: documentId });
         let tools = documentTools ? documentTools.tools : [];
         
+        console.log(`GET /api/documents/${documentId}/tools - documentTools found:`, !!documentTools, `tools count: ${tools.length}`);
+        
         // Get current user's email for finding their signature in assignedRecipients
         const currentUser = await User.findById(userId);
         const currentUserEmail = currentUser ? currentUser.email : null;
@@ -1411,6 +1413,7 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
             
             for (let i = 0; i < tools.length; i++) {
                 const toolId = tools[i].id;
+                console.log(`Processing tool ${i} with id: ${toolId}, label: ${tools[i].tool?.label}`);
                 try {
                     // Try to find DocumentTool by toolId field (for legacy tool IDs)
                     // or by _id (for new ObjectId-based tools)
@@ -1419,9 +1422,12 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                         toolId: toolId
                     });
                     
+                    console.log(`DocumentTool lookup for toolId ${toolId}: ${docTool ? 'found' : 'not found'}`);
+                    
                     // If not found by toolId, try by _id if it's a valid ObjectId
                     if (!docTool && mongoose.Types.ObjectId.isValid(toolId)) {
                         docTool = await DocumentTool.findById(toolId);
+                        console.log(`DocumentTool lookup by _id for ${toolId}: ${docTool ? 'found' : 'not found'}`);
                     }
                     
                     if (docTool) {
