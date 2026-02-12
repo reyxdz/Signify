@@ -1,15 +1,108 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, MoreVertical, FileText, Upload, Search } from 'lucide-react';
 import '../Sections.css';
 
 const Documents = () => {
-  const documents = [
-    { id: 1, name: 'Contract_2026.pdf', size: '2.4 MB', date: '2 days ago', status: 'signed' },
-    { id: 2, name: 'Agreement_Final.docx', size: '1.8 MB', date: '5 days ago', status: 'pending' },
-    { id: 3, name: 'Invoice_Q1.pdf', size: '892 KB', date: '1 week ago', status: 'signed' },
-    { id: 4, name: 'Report_Monthly.xlsx', size: '1.2 MB', date: '2 weeks ago', status: 'signed' },
-    { id: 5, name: 'Proposal_NewClient.pdf', size: '3.1 MB', date: '3 weeks ago', status: 'draft' },
-  ];
+  const [ownedDocuments, setOwnedDocuments] = useState([]);
+  const [recipientDocuments, setRecipientDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/documents/all', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setOwnedDocuments(result.data.owned || []);
+        setRecipientDocuments(result.data.recipient || []);
+      } else {
+        setError('Failed to fetch documents');
+      }
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+      setError('Error loading documents');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
+
+  const formatSize = (bytes) => {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getStatusClass = (status) => {
+    switch(status) {
+      case 'signed': return 'signed';
+      case 'pending': return 'pending';
+      case 'draft': return 'draft';
+      default: return 'draft';
+    }
+  };
+
+  const filterDocuments = (docs) => {
+    if (!searchQuery.trim()) return docs;
+    return docs.filter(doc =>
+      (doc.name || doc.fileName || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
+  const filteredOwned = filterDocuments(ownedDocuments);
+  const filteredRecipient = filterDocuments(recipientDocuments);
+
+  const DocumentRow = ({ doc, isRecipient = false }) => (
+    <div key={doc._id} className="table-row">
+      <div className="col-name">
+        <FileText size={18} className="file-icon" />
+        {doc.name || doc.fileName}
+      </div>
+      <div className="col-size">{formatSize(doc.size)}</div>
+      <div className="col-date">{formatDate(doc.modifiedAt || doc.createdAt)}</div>
+      <div className="col-status">
+        <span className={`status-badge ${isRecipient ? doc.recipientStatus : doc.status}`}>
+          {(isRecipient ? doc.recipientStatus : doc.status).charAt(0).toUpperCase() + 
+           (isRecipient ? doc.recipientStatus : doc.status).slice(1)}
+        </span>
+      </div>
+      <div className="col-actions">
+        <button className="action-btn" title="View document">
+          <Eye size={16} />
+        </button>
+        <button className="action-btn" title="More options">
+          <MoreVertical size={16} />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="section-documents">
@@ -25,6 +118,8 @@ const Documents = () => {
             type="text" 
             placeholder="Search documents..." 
             className="search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <button className="btn-primary">
@@ -32,39 +127,78 @@ const Documents = () => {
         </button>
       </div>
 
-      <div className="documents-table">
-        <div className="table-header">
-          <div className="col-name">Name</div>
-          <div className="col-size">Size</div>
-          <div className="col-date">Modified</div>
-          <div className="col-status">Status</div>
-          <div className="col-actions">Actions</div>
+      {error && (
+        <div className="error-banner">
+          {error}
         </div>
-        
-        {documents.map(doc => (
-          <div key={doc.id} className="table-row">
-            <div className="col-name">
-              <FileText size={18} className="file-icon" />
-              {doc.name}
+      )}
+
+      {loading ? (
+        <div className="loading-state">
+          <p>Loading documents...</p>
+        </div>
+      ) : (
+        <>
+          {/* Your Documents Section */}
+          <div className="documents-section">
+            <div className="section-title">
+              <h2>Your Documents</h2>
+              <span className="doc-count">{filteredOwned.length}</span>
             </div>
-            <div className="col-size">{doc.size}</div>
-            <div className="col-date">{doc.date}</div>
-            <div className="col-status">
-              <span className={`status-badge ${doc.status}`}>
-                {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-              </span>
-            </div>
-            <div className="col-actions">
-              <button className="action-btn">
-                <Eye size={16} />
-              </button>
-              <button className="action-btn">
-                <MoreVertical size={16} />
-              </button>
-            </div>
+            
+            {filteredOwned.length === 0 ? (
+              <div className="empty-section">
+                <FileText size={32} />
+                <p>No documents yet</p>
+                <small>Upload your first document to get started</small>
+              </div>
+            ) : (
+              <div className="documents-table">
+                <div className="table-header">
+                  <div className="col-name">Name</div>
+                  <div className="col-size">Size</div>
+                  <div className="col-date">Modified</div>
+                  <div className="col-status">Status</div>
+                  <div className="col-actions">Actions</div>
+                </div>
+                {filteredOwned.map(doc => (
+                  <DocumentRow key={doc._id} doc={doc} isRecipient={false} />
+                ))}
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+
+          {/* Documents Where User Is Recipient */}
+          {recipientDocuments.length > 0 && (
+            <div className="documents-section">
+              <div className="section-title">
+                <h2>Documents for Signature</h2>
+                <span className="doc-count">{filteredRecipient.length}</span>
+              </div>
+
+              {filteredRecipient.length === 0 ? (
+                <div className="empty-section">
+                  <FileText size={32} />
+                  <p>No documents awaiting action</p>
+                </div>
+              ) : (
+                <div className="documents-table">
+                  <div className="table-header">
+                    <div className="col-name">Name</div>
+                    <div className="col-size">Size</div>
+                    <div className="col-date">Modified</div>
+                    <div className="col-status">Status</div>
+                    <div className="col-actions">Actions</div>
+                  </div>
+                  {filteredRecipient.map(doc => (
+                    <DocumentRow key={doc._id} doc={doc} isRecipient={true} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

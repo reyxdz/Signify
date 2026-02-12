@@ -674,6 +674,43 @@ app.get("/api/documents/recent", verifyToken, async (req, resp) => {
     }
 });
 
+// Get all documents (owned + as recipient)
+app.get("/api/documents/all", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const user = await User.findById(userId).select('email');
+        const userEmail = user?.email;
+
+        // Get owned documents
+        const ownedDocs = await Document.find({ userId })
+            .sort({ modifiedAt: -1 })
+            .select('_id name fileName status modifiedAt createdAt uploadedAt size userId');
+
+        // Get documents where user is a recipient
+        const recipientDocs = await DocumentRecipients.find({ recipientEmail: userEmail })
+            .populate('documentId', '_id name fileName status modifiedAt createdAt uploadedAt size userId')
+            .sort({ modifiedAt: -1 });
+
+        // Format recipient documents
+        const recipientDocsFormatted = recipientDocs.map(r => ({
+            ...r.documentId.toObject(),
+            recipientStatus: r.status,
+            recipientOrder: r.order,
+        }));
+
+        resp.status(200).send({
+            message: "All documents retrieved successfully",
+            data: {
+                owned: ownedDocs,
+                recipient: recipientDocsFormatted,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching all documents:", error);
+        resp.status(500).send({ message: "Error fetching documents", error: error.message });
+    }
+});
+
 // Get activity log for overview
 app.get("/api/activity", verifyToken, async (req, resp) => {
     try {
