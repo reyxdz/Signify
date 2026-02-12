@@ -1013,6 +1013,11 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
         const { documentId } = req.params;
         const { signatures } = req.body;
 
+        console.log(`POST /api/documents/${documentId}/sign - Received ${Object.keys(signatures || {}).length} signatures`);
+        Object.entries(signatures || {}).forEach(([fieldId, sig]) => {
+            console.log(`  - Field ${fieldId}: signature length ${sig.length}`);
+        });
+
         if (!signatures || Object.keys(signatures).length === 0) {
             return resp.status(400).send({ message: "At least one signature is required" });
         }
@@ -1028,6 +1033,8 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
             return resp.status(404).send({ message: "User not found" });
         }
 
+        console.log(`Signing as recipient: ${user.email}`);
+
         // Check if user is recipient
         const recipient = await DocumentRecipients.findOne({
             documentId: documentId,
@@ -1041,12 +1048,18 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
         // Update each tool with the signature data for this recipient
         const updatedFields = [];
         for (const [fieldId, signatureData] of Object.entries(signatures)) {
+            console.log(`Processing fieldId: ${fieldId}`);
             const tool = await DocumentTool.findById(fieldId);
             if (tool) {
+                console.log(`Found DocumentTool ${fieldId}, checking assignedRecipients:`, {
+                    recipientCount: tool.assignedRecipients.length,
+                    recipients: tool.assignedRecipients.map(r => ({ id: r.recipientId, email: r.recipientEmail, status: r.status }))
+                });
                 // Find the recipient in assignedRecipients array
                 const recipientIndex = tool.assignedRecipients.findIndex(r => r.recipientId.toString() === recipient._id.toString());
                 
                 if (recipientIndex !== -1) {
+                    console.log(`Found recipient at index ${recipientIndex}, updating signature data`);
                     // Update the specific recipient's signature in the array
                     tool.assignedRecipients[recipientIndex].signatureData = signatureData;
                     tool.assignedRecipients[recipientIndex].status = 'signed';
@@ -1061,7 +1074,12 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
                     
                     await tool.save();
                     updatedFields.push(fieldId);
+                    console.log(`Saved DocumentTool ${fieldId} with signature`);
+                } else {
+                    console.log(`Recipient not found in assignedRecipients for fieldId ${fieldId}`);
                 }
+            } else {
+                console.log(`DocumentTool not found for fieldId: ${fieldId}`);
             }
         }
 
