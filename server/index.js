@@ -1312,6 +1312,11 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
             tool.tool && (tool.tool.label === 'Recipient Signature' || tool.tool.label === 'Recipient Initial')
         );
         
+        console.log(`Saving tools endpoint - checking for recipient fields. Tools count: ${tools.length}, Recipient fields found: ${recipientFields.length}`);
+        tools.forEach((tool, idx) => {
+            console.log(`  Tool ${idx}: label=${tool.tool?.label}`);
+        });
+        
         console.log(`Creating DocumentTool records for ${recipientFields.length} recipient fields`);
         
         for (const field of recipientFields) {
