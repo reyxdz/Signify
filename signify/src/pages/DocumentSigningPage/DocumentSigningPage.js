@@ -209,25 +209,36 @@ function DocumentSigningPage() {
         console.log('→ Saving', droppedTools.length, 'tools to database for document:', documentId);
         
         // Filter out icon (React component) before sending - only send serializable data
-        const serializableTools = droppedTools.map(item => ({
-          id: item.id,
-          tool: {
-            id: item.tool.id,
-            label: item.tool.label,
-            value: item.tool.value,
-            placeholder: item.tool.placeholder,
-            className: item.tool.className,
-          },
-          x: item.x,
-          y: item.y,
-          page: item.page,
-          ...(item.width && { width: item.width }),
-          ...(item.height && { height: item.height }),
-          ...(item.fontFamily && { fontFamily: item.fontFamily }),
-          ...(item.fontSize && { fontSize: item.fontSize }),
-          ...(item.fontColor && { fontColor: item.fontColor }),
-          ...(item.fontStyles && { fontStyles: item.fontStyles }),
-        }));
+        const serializableTools = droppedTools.map(item => {
+          console.log(`Serializing tool ${item.id}:`, {
+            id: item.id,
+            label: item.tool?.label,
+            x: item.x,
+            y: item.y,
+            page: item.page,
+            width: item.width,
+            height: item.height,
+          });
+          return {
+            id: item.id,
+            tool: {
+              id: item.tool.id,
+              label: item.tool.label,
+              value: item.tool.value,
+              placeholder: item.tool.placeholder,
+              className: item.tool.className,
+            },
+            x: item.x,
+            y: item.y,
+            page: item.page,
+            width: item.width || 150,  // Include width even if not set
+            height: item.height || 60,  // Include height even if not set
+            ...(item.fontFamily && { fontFamily: item.fontFamily }),
+            ...(item.fontSize && { fontSize: item.fontSize }),
+            ...(item.fontColor && { fontColor: item.fontColor }),
+            ...(item.fontStyles && { fontStyles: item.fontStyles }),
+          };
+        });
         
         const response = await fetch(`http://localhost:5000/api/documents/${documentId}/tools`, {
           method: 'POST',
