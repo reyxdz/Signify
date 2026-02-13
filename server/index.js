@@ -1321,11 +1321,19 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
 
         // Create or update DocumentTool records for recipient fields
         // This ensures we have the infrastructure to store signatures
+        console.log(`POST save tools - Processing ${tools.length} total tools`);
+        tools.forEach((tool, idx) => {
+            console.log(`  Tool ${idx}: id=${tool.id}, label=${tool.tool?.label}, type=${typeof tool.id}`);
+        });
+        
         const recipientFields = tools.filter(tool => 
             tool.tool && (tool.tool.label === 'Recipient Signature' || tool.tool.label === 'Recipient Initial')
         );
         
-        console.log(`Creating DocumentTool records for ${recipientFields.length} recipient fields`);
+        console.log(`Found ${recipientFields.length} recipient fields to create DocumentTool records for:`);
+        recipientFields.forEach((field, idx) => {
+            console.log(`  Recipient field ${idx}: id=${field.id}, label=${field.tool?.label}`);
+        });
         
         // Get all recipients for this document ONCE (instead of in loop)
         const recipients = await DocumentRecipients.find({ documentId: documentId });
