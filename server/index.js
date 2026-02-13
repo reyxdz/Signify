@@ -1055,7 +1055,7 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
             // Look up by toolId field first (fieldId is the tool.id from frontend)
             let tool = await DocumentTool.findOne({
                 documentId: documentId,
-                toolId: fieldId
+                toolId: String(fieldId)  // Ensure toolId is string
             });
             
             // Fall back to finding by _id if it's a valid ObjectId
@@ -1334,7 +1334,7 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
             // Check if DocumentTool already exists for this toolId
             let docTool = await DocumentTool.findOne({
                 documentId: documentId,
-                toolId: field.id
+                toolId: String(field.id)  // Ensure toolId is string for consistent lookup
             });
             
             if (!docTool) {
@@ -1348,7 +1348,7 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                 
                 docTool = new DocumentTool({
                     documentId: documentId,
-                    toolId: field.id,
+                    toolId: String(field.id),  // Store as string for consistency
                     toolType: field.tool.label === 'Recipient Signature' ? 'recipient_signature' : 'recipient_initial',
                     toolLabel: field.tool.label,
                     position: {
@@ -1426,13 +1426,14 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
             
             for (let i = 0; i < tools.length; i++) {
                 const toolId = tools[i].id;
-                console.log(`Processing tool ${i} with id: ${toolId}, label: ${tools[i].tool?.label}`);
+                const originalValue = tools[i].tool?.value;
+                console.log(`Processing tool ${i} with id: ${toolId}, label: ${tools[i].tool?.label}, current value: "${originalValue}"`);
                 try {
                     // Try to find DocumentTool by toolId field (for legacy tool IDs)
                     // or by _id (for new ObjectId-based tools)
                     let docTool = await DocumentTool.findOne({ 
                         documentId: documentId,
-                        toolId: toolId
+                        toolId: String(toolId)  // Ensure toolId is string for consistent lookup
                     });
                     
                     console.log(`DocumentTool lookup for toolId ${toolId}: ${docTool ? 'found' : 'not found'}`);
@@ -1478,10 +1479,12 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                             // Update the tool with signature data
                             tools[i].tool = tools[i].tool || {};
                             tools[i].tool.value = signatureData;
-                            console.log(`Set tool.value for ${toolId}, length: ${signatureData.length}`);
+                            console.log(`✓ Set tool.value for ${toolId}, length: ${signatureData.length}`);
                         } else {
-                            console.log(`No signature data found for toolId ${toolId}`);
+                            console.log(`✗ No signature data found for toolId ${toolId}`);
                         }
+                    } else {
+                        console.log(`✗ DocumentTool not found for toolId: ${toolId}`);
                     }
                 } catch (error) {
                     console.log('Error fetching DocumentTool for toolId:', toolId, error.message);
