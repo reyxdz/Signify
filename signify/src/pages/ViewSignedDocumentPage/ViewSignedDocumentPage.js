@@ -7,7 +7,7 @@ import './ViewSignedDocumentPage.css';
 const ViewSignedDocumentPage = ({ user }) => {
   const { documentId } = useParams();
   const navigate = useNavigate();
-  const [document, setDocument] = useState(null);
+  const [docData, setDocData] = useState(null);
   const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,7 +32,7 @@ const ViewSignedDocumentPage = ({ user }) => {
         }
 
         const docData = await docResponse.json();
-        setDocument(docData.data || docData);
+        setDocData(docData.data || docData);
 
         // Fetch tools with signatures
         const toolsResponse = await fetch(`http://localhost:5000/api/documents/${documentId}/tools`, {
@@ -96,12 +96,12 @@ const ViewSignedDocumentPage = ({ user }) => {
       // Create a blob from the response
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = globalThis.document.createElement('a');
       link.href = url;
-      link.download = `${document?.name || 'document'}-signed.pdf`;
-      document.body.appendChild(link);
+      link.download = `${docData?.name || 'document'}-signed.pdf`;
+      globalThis.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      globalThis.document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error exporting document:', err);
@@ -153,7 +153,7 @@ const ViewSignedDocumentPage = ({ user }) => {
             <ArrowLeft size={20} /> Back
           </button>
           <div className="document-info">
-            <h1>{document?.name || document?.fileName}</h1>
+            <h1>{docData?.name || docData?.fileName}</h1>
             <p>Signed document - Ready to view and export</p>
           </div>
         </div>
@@ -177,10 +177,10 @@ const ViewSignedDocumentPage = ({ user }) => {
       </div>
 
       <div className="document-viewer-container">
-        {document && (
+        {docData && (
           <DocumentViewer 
             documentId={documentId}
-            fileData={document.fileData}
+            fileData={docData.fileData}
             droppedTools={tools}
             setDroppedTools={() => {}}
             onDocumentUpload={() => {}}
