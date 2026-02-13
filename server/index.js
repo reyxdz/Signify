@@ -2342,12 +2342,16 @@ app.get("/api/documents/:documentId/export", verifyToken, async (req, resp) => {
 
                     // Draw the image on the page at the specified position
                     // PDF coordinates: origin at bottom-left, UI coordinates: origin at top-left
+                    // position.y is stored as absolute coordinate from top of entire document
+                    // We need to make it relative to the current page, then convert to PDF coordinates
                     const x = tool.position.x;
-                    const y = pageHeight - tool.position.y;
+                    const pageOffsetY = pageIndex * pageHeight;  // How many points down this page starts
+                    const relativeY = tool.position.y - pageOffsetY;  // Y relative to current page top
+                    const y = pageHeight - relativeY;  // Convert to PDF coordinates (from bottom)
                     const width = tool.dimensions.width || 150;
                     const height = tool.dimensions.height || 60;
 
-                    console.log(`  Embedding: pageHeight=${pageHeight}, calculated y=${y}`);
+                    console.log(`  Calculated: pageOffsetY=${pageOffsetY}, relativeY=${relativeY}, final y=${y}`);
 
                     page.drawImage(image, {
                         x: x,
