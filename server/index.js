@@ -2276,76 +2276,88 @@ app.get("/api/documents/:documentId/export", verifyToken, async (req, resp) => {
                 continue;
             }
 
-            let signatureData = null;
+            // For document owners, export ALL signatures from all recipients
+            // For recipients viewing their own document, use their signature
+            const isOwner = document.userId.toString() === userId.toString();
+            
+            let signaturesToAdd = [];
 
-            // For recipient fields, use the current user's signature
-            if (currentUserEmail && tool.assignedRecipients && tool.assignedRecipients.length > 0) {
-                const userRecipient = tool.assignedRecipients.find(r => 
-                    r.recipientEmail && r.recipientEmail.toLowerCase() === currentUserEmail.toLowerCase()
-                );
-                if (userRecipient && userRecipient.signatureData) {
-                    signatureData = userRecipient.signatureData;
+            if (isOwner) {
+                // Owner viewing: add all signatures from all recipients
+                if (tool.assignedRecipients && tool.assignedRecipients.length > 0) {
+                    signaturesToAdd = tool.assignedRecipients.filter(r => r.signatureData);
+                }
+            } else {
+                // Recipient viewing: add only their own signature
+                if (currentUserEmail && tool.assignedRecipients && tool.assignedRecipients.length > 0) {
+                    const userRecipient = tool.assignedRecipients.find(r => 
+                        r.recipientEmail && r.recipientEmail.toLowerCase() === currentUserEmail.toLowerCase()
+                    );
+                    if (userRecipient && userRecipient.signatureData) {
+                        signaturesToAdd = [userRecipient];
+                    }
                 }
             }
 
-            // Fall back to legacy signatureData
-            if (!signatureData && tool.signatureData) {
-                signatureData = tool.signatureData;
+            // Fall back to legacy signatureData for backward compatibility
+            if (signaturesToAdd.length === 0 && tool.signatureData) {
+                signaturesToAdd = [{ signatureData: tool.signatureData }];
             }
 
-            if (!signatureData) {
-                console.log(`No signature data for tool ${tool._id}, skipping`);
-                continue;
-            }
+            console.log(`Tool ${tool._id}: found ${signaturesToAdd.length} signature(s) to embed`);
 
-            // Get the page (1-indexed in database, 0-indexed in pdf-lib)
-            const pageIndex = (tool.position.page || 1) - 1;
-            if (pageIndex >= pages.length || pageIndex < 0) {
-                console.log(`Page ${pageIndex + 1} not found, skipping tool ${tool._id}`);
-                continue;
-            }
+            for (const recipient of signaturesToAdd) {
+                const signatureData = recipient.signatureData;
+                if (!signatureData) continue;
 
-            const page = pages[pageIndex];
-            const pageHeight = page.getHeight();
-
-            try {
-                // Parse signature data (could be base64 image or canvas data)
-                let imageData = signatureData;
-                
-                // If it's a data URI, extract the base64 part
-                if (imageData.startsWith('data:image')) {
-                    imageData = imageData.split(',')[1];
+                // Get the page (1-indexed in database, 0-indexed in pdf-lib)
+                const pageIndex = (tool.position.page || 1) - 1;
+                if (pageIndex >= pages.length || pageIndex < 0) {
+                    console.log(`Page ${pageIndex + 1} not found, skipping tool ${tool._id}`);
+                    continue;
                 }
 
-                // Convert base64 to buffer
-                const imageBuffer = Buffer.from(imageData, 'base64');
-                
-                // Embed the image
-                const image = await pdfDoc.embedPng(imageBuffer).catch(async () => {
-                    // Try JPEG if PNG fails
-                    return await pdfDoc.embedJpeg(imageBuffer);
-                });
+                const page = pages[pageIndex];
+                const pageHeight = page.getHeight();
 
-                // Draw the image on the page at the specified position
-                // Note: PDF coordinates have origin at bottom-left, but we use top-left in the UI
-                const x = tool.position.x;
-                const y = pageHeight - (tool.position.y + (tool.dimensions.height || 60));
-                const width = tool.dimensions.width || 150;
-                const height = tool.dimensions.height || 60;
+                try {
+                    // Parse signature data (could be base64 image or canvas data)
+                    let imageData = signatureData;
+                    
+                    // If it's a data URI, extract the base64 part
+                    if (imageData.startsWith('data:image')) {
+                        imageData = imageData.split(',')[1];
+                    }
 
-                page.drawImage(image, {
-                    x: x,
-                    y: y,
-                    width: width,
-                    height: height,
-                });
+                    // Convert base64 to buffer
+                    const imageBuffer = Buffer.from(imageData, 'base64');
+                    
+                    // Embed the image
+                    const image = await pdfDoc.embedPng(imageBuffer).catch(async () => {
+                        // Try JPEG if PNG fails
+                        return await pdfDoc.embedJpeg(imageBuffer);
+                    });
 
-                console.log(`Added signature for tool ${tool._id} at (${x}, ${y}) size ${width}x${height}`);
-            } catch (error) {
-                console.error(`Error embedding signature for tool ${tool._id}:`, error.message);
-                // Continue with other signatures even if one fails
+                    // Draw the image on the page at the specified position
+                    // PDF coordinates: origin at bottom-left, UI coordinates: origin at top-left
+                    const x = tool.position.x;
+                    const y = pageHeight - tool.position.y - (tool.dimensions.height || 60);
+                    const width = tool.dimensions.width || 150;
+                    const height = tool.dimensions.height || 60;
+
+                    page.drawImage(image, {
+                        x: x,
+                        y: y,
+                        width: width,
+                        height: height,
+                    });
+
+                    console.log(`Added signature for tool ${tool._id} (${recipient.recipientEmail || 'owner'}) at (${x}, ${y}) size ${width}x${height}`);
+                } catch (error) {
+                    console.error(`Error embedding signature for tool ${tool._id}:`, error.message);
+                    // Continue with other signatures even if one fails
+                }
             }
-        }
 
         // Save the modified PDF
         const pdfBytes = await pdfDoc.save();
