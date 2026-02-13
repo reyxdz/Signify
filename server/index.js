@@ -1088,11 +1088,12 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
                     tool.assignedRecipients[recipientIndex].status = 'signed';
                     tool.assignedRecipients[recipientIndex].signedAt = new Date();
                     
-                    // Also update legacy fields if this is the only recipient
+                    // For multi-recipient tools, don't set legacy fields - only use assignedRecipients
+                    // For backward compatibility with single-recipient tools
                     if (tool.assignedRecipients.length === 1) {
                         tool.signatureData = signatureData;
                         tool.signedAt = new Date();
-                        tool.value = 'Signed';
+                        // Don't set tool.value - it's not a signature image, just a status
                     }
                     
                     await tool.save();
@@ -1444,14 +1445,21 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                             const userRecipient = docTool.assignedRecipients.find(r => 
                                 r.recipientEmail && r.recipientEmail.toLowerCase() === currentUserEmail.toLowerCase()
                             );
-                            if (userRecipient && userRecipient.signatureData) {
-                                console.log(`Found signature data for user ${currentUserEmail} in toolId ${toolId}`);
-                                signatureData = userRecipient.signatureData;
+                            if (userRecipient) {
+                                console.log(`Found recipient ${userRecipient.recipientEmail}:`, {
+                                    status: userRecipient.status,
+                                    hasSignatureData: !!userRecipient.signatureData,
+                                    signatureDataLength: userRecipient.signatureData?.length || 0
+                                });
+                                if (userRecipient.signatureData) {
+                                    signatureData = userRecipient.signatureData;
+                                }
                             }
                         }
                         
-                        // Fall back to legacy signatureData field
+                        // Fall back to legacy signatureData field only if no multi-recipient data found
                         if (!signatureData && docTool.signatureData) {
+                            console.log(`Using legacy signatureData for toolId ${toolId}`);
                             signatureData = docTool.signatureData;
                         }
                         
@@ -1459,6 +1467,9 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                             // Update the tool with signature data
                             tools[i].tool = tools[i].tool || {};
                             tools[i].tool.value = signatureData;
+                            console.log(`Set tool.value for ${toolId}, length: ${signatureData.length}`);
+                        } else {
+                            console.log(`No signature data found for toolId ${toolId}`);
                         }
                     }
                 } catch (error) {

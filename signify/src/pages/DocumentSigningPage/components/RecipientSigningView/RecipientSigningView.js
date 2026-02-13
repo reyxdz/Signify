@@ -31,23 +31,33 @@ function RecipientSigningView({
     recipientFields.forEach(tool => {
       // Check if the tool already has signature data (from database)
       if (tool.tool && tool.tool.value) {
+        const value = tool.tool.value;
         console.log(`Tool ${tool.id} (${tool.tool.label}): value =`, {
-          type: typeof tool.tool.value,
-          length: tool.tool.value?.length,
-          startsWithDataImage: typeof tool.tool.value === 'string' && tool.tool.value.startsWith('data:image'),
-          preview: typeof tool.tool.value === 'string' ? tool.tool.value.substring(0, 50) : 'not a string'
+          type: typeof value,
+          length: value?.length,
+          startsWithDataImage: typeof value === 'string' && value.startsWith('data:image'),
+          preview: typeof value === 'string' ? value.substring(0, 50) : 'not a string'
         });
         
-        // Accept any non-empty string value as signature data
-        // It could be a data URI, base64, or any other format
-        if (typeof tool.tool.value === 'string' && tool.tool.value.trim().length > 0) {
-          console.log(`Setting signature for tool ${tool.id}`);
-          initialSignatures[tool.id] = tool.tool.value;
+        // Only accept valid signature data:
+        // - Must be a non-empty string
+        // - Must be reasonably long (actual signatures are much longer than placeholder strings)
+        // - Should be base64 or data URI format (contains typical base64 characters or starts with data:)
+        const isValidSignature = 
+          typeof value === 'string' && 
+          value.trim().length > 100 && // Real signatures are much longer
+          (value.startsWith('data:') || /^[A-Za-z0-9+/=]+$/.test(value)); // Valid base64 or data URI
+        
+        if (isValidSignature) {
+          console.log(`Setting signature for tool ${tool.id} - valid signature detected`);
+          initialSignatures[tool.id] = value;
+        } else {
+          console.log(`Ignoring value for tool ${tool.id} - not a valid signature (length: ${value?.length})`);
         }
       }
     });
     
-    console.log('RecipientSigningView: Found', Object.keys(initialSignatures).length, 'signatures to initialize');
+    console.log('RecipientSigningView: Found', Object.keys(initialSignatures).length, 'valid signatures to initialize');
     
     // Only update state if there are signatures to set
     if (Object.keys(initialSignatures).length > 0) {
