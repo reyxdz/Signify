@@ -14,7 +14,8 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/signify', {}).then(async () => {
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/signify';
+mongoose.connect(mongoUri, {}).then(async () => {
     console.log('Connected to signify database');
     
     // Fix: Drop and recreate the publishLink index to ensure sparse constraint
