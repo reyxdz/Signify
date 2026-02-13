@@ -160,10 +160,13 @@ const ViewSignedDocumentPage = ({ user }) => {
       </div>
 
       <div className="document-viewer-container">
-        {document && document.fileData && (
+        {document && (
           <DocumentViewer 
+            documentId={documentId}
             fileData={document.fileData}
             droppedTools={tools}
+            setDroppedTools={() => {}}
+            onDocumentUpload={() => {}}
             isRecipientMode={true}
           />
         )}
