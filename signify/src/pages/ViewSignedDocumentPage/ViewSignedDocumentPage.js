@@ -96,12 +96,12 @@ const ViewSignedDocumentPage = ({ user }) => {
       // Create a blob from the response
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = globalThis.document.createElement('a');
+      const link = window.document.createElement('a');
       link.href = url;
       link.download = `${docData?.name || 'document'}-signed.pdf`;
-      globalThis.document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
-      globalThis.document.body.removeChild(link);
+      window.document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error exporting document:', err);
