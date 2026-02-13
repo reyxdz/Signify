@@ -475,6 +475,7 @@ function DocumentSigningPage() {
           {/* Center space reserved for future actions */}
         </div>
         <div className="header-right">
+          <h2 className="header-filename">{documentName}</h2>
           {!isRecipient ? (
             <>
               <button className="preview-btn" onClick={handlePreview}>Preview</button>
@@ -489,7 +490,6 @@ function DocumentSigningPage() {
               Sign Document
             </button>
           )}
-          <h2 className="header-filename">{documentName}</h2>
         </div>
       </div>
       <div className="signing-container">
