@@ -1424,19 +1424,26 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
         if (tools && tools.length > 0) {
             console.log(`Looking for signature data for user: ${currentUserEmail}`);
             
+            // Debug: Check what DocumentTool records exist in the database
+            const allDocTools = await DocumentTool.find({ documentId: documentId });
+            console.log(`DEBUG: All DocumentTool records for document ${documentId}:`, 
+                allDocTools.map(dt => ({ _id: dt._id.toString(), toolId: dt.toolId, label: dt.toolLabel }))
+            );
+            
             for (let i = 0; i < tools.length; i++) {
                 const toolId = tools[i].id;
                 const originalValue = tools[i].tool?.value;
-                console.log(`Processing tool ${i} with id: ${toolId}, label: ${tools[i].tool?.label}, current value: "${originalValue}"`);
+                console.log(`Processing tool ${i} with id: ${toolId} (type: ${typeof toolId}), label: ${tools[i].tool?.label}, current value: "${originalValue}"`);
                 try {
                     // Try to find DocumentTool by toolId field (for legacy tool IDs)
                     // or by _id (for new ObjectId-based tools)
+                    console.log(`Searching for DocumentTool with toolId: "${String(toolId)}" (string type)`);
                     let docTool = await DocumentTool.findOne({ 
                         documentId: documentId,
                         toolId: String(toolId)  // Ensure toolId is string for consistent lookup
                     });
                     
-                    console.log(`DocumentTool lookup for toolId ${toolId}: ${docTool ? 'found' : 'not found'}`);
+                    console.log(`DocumentTool lookup for toolId ${toolId}: ${docTool ? 'found (' + docTool._id + ')' : 'not found'}`);
                     
                     // If not found by toolId, try by _id if it's a valid ObjectId
                     if (!docTool && mongoose.Types.ObjectId.isValid(toolId)) {
