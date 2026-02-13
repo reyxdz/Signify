@@ -1327,9 +1327,14 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
         
         console.log(`Creating DocumentTool records for ${recipientFields.length} recipient fields`);
         
+        // Get all recipients for this document ONCE (instead of in loop)
+        const recipients = await DocumentRecipients.find({ documentId: documentId });
+        console.log(`Found ${recipients.length} recipients for document:`, 
+            recipients.map(r => ({ id: r._id, email: r.recipientEmail }))
+        );
+        
         for (const field of recipientFields) {
-            // Get all recipients for this document
-            const recipients = await DocumentRecipients.find({ documentId: documentId });
+            console.log(`Processing recipient field: ${field.id} (${field.tool.label})`);
             
             // Check if DocumentTool already exists for this toolId
             let docTool = await DocumentTool.findOne({
@@ -1345,6 +1350,10 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                     status: 'pending',
                     signatureData: null,
                 }));
+                
+                console.log(`Creating new DocumentTool for ${field.id} with ${assignedRecipients.length} recipients:`,
+                    assignedRecipients.map(r => r.recipientEmail)
+                );
                 
                 docTool = new DocumentTool({
                     documentId: documentId,
@@ -1364,7 +1373,9 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                 });
                 
                 await docTool.save();
-                console.log(`Created DocumentTool for field ${field.id} with ${assignedRecipients.length} recipients`);
+                console.log(`✓ Created DocumentTool for field ${field.id} with ${assignedRecipients.length} recipients`);
+            } else {
+                console.log(`DocumentTool already exists for ${field.id}, skipping creation`);
             }
         }
 
@@ -1430,6 +1441,10 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                 allDocTools.map(dt => ({ _id: dt._id.toString(), toolId: dt.toolId, label: dt.toolLabel }))
             );
             
+            // Get current recipients in case DocumentTool records need to be populated
+            const currentRecipients = await DocumentRecipients.find({ documentId: documentId });
+            console.log(`Found ${currentRecipients.length} recipients for document: ${currentRecipients.map(r => r.recipientEmail).join(', ')}`);
+            
             for (let i = 0; i < tools.length; i++) {
                 const toolId = tools[i].id;
                 const originalValue = tools[i].tool?.value;
@@ -1445,13 +1460,20 @@ app.get("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                     
                     console.log(`DocumentTool lookup for toolId ${toolId}: ${docTool ? 'found (' + docTool._id + ')' : 'not found'}`);
                     
-                    // If not found by toolId, try by _id if it's a valid ObjectId
-                    if (!docTool && mongoose.Types.ObjectId.isValid(toolId)) {
-                        docTool = await DocumentTool.findById(toolId);
-                        console.log(`DocumentTool lookup by _id for ${toolId}: ${docTool ? 'found' : 'not found'}`);
-                    }
-                    
                     if (docTool) {
+                        // If assignedRecipients is empty but recipients exist, populate it now
+                        if ((!docTool.assignedRecipients || docTool.assignedRecipients.length === 0) && currentRecipients.length > 0) {
+                            console.log(`✓ DocumentTool ${toolId} has empty assignedRecipients, populating with current recipients`);
+                            docTool.assignedRecipients = currentRecipients.map(recipient => ({
+                                recipientId: recipient._id,
+                                recipientEmail: recipient.recipientEmail,
+                                status: 'pending',
+                                signatureData: null,
+                            }));
+                            await docTool.save();
+                            console.log(`✓ Saved DocumentTool ${toolId} with ${docTool.assignedRecipients.length} recipients`);
+                        }
+                        
                         let signatureData = null;
                         console.log(`Found DocumentTool for toolId ${toolId}:`, {
                           hasAssignedRecipients: !!docTool.assignedRecipients,
