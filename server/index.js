@@ -1382,8 +1382,14 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                     assignedRecipients: assignedRecipients,
                 });
                 
-                await docTool.save();
-                console.log(`✓ Created DocumentTool for field ${field.id} with ${assignedRecipients.length} recipients`);
+                try {
+                    await docTool.save();
+                    console.log(`✓ Created DocumentTool for field ${field.id} with ${assignedRecipients.length} recipients`);
+                } catch (saveError) {
+                    console.error(`Error saving DocumentTool for field ${field.id}:`, saveError.message);
+                    console.error(`Full error:`, saveError);
+                    // Continue anyway - don't throw, just log
+                }
             } else {
                 console.log(`DocumentTool already exists for ${field.id}, skipping creation`);
             }
