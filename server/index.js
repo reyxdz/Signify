@@ -1308,7 +1308,8 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
         }
 
         // Update or create document tools
-        let documentTools = await DocumentTools.findOneAndUpdate(
+        // Use updateOne instead of findOneAndUpdate to avoid unique key constraint issues with upsert
+        await DocumentTools.updateOne(
             { documentId: documentId },
             {
                 documentId: documentId,
@@ -1316,8 +1317,9 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
                 tools: tools,
                 updatedAt: new Date(),
             },
-            { upsert: true, new: true }
+            { upsert: true }
         );
+        console.log(`Saved DocumentTools for ${documentId}`);
 
         // Create or update DocumentTool records for recipient fields
         // This ensures we have the infrastructure to store signatures
