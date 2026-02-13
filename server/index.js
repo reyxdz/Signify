@@ -419,7 +419,7 @@ DocumentToolSchema.index({ documentId: 1 });
 DocumentToolSchema.index({ documentId: 1, toolId: 1 });
 DocumentToolSchema.index({ assignedToRecipientId: 1 });
 
-const DocumentTool = mongoose.model('documentTool', DocumentToolSchema);
+const DocumentTool = mongoose.model('documentTool', DocumentToolSchema, 'documentTool');
 
 // Legacy DocumentTools schema for backward compatibility (stores all tools as array)
 const DocumentToolsSchema = new mongoose.Schema({
@@ -1320,6 +1320,9 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
             { upsert: true }
         );
         console.log(`Saved DocumentTools for ${documentId}`);
+
+        // Re-fetch the DocumentTools record so we can return it
+        const documentTools = await DocumentTools.findOne({ documentId: documentId });
 
         // Create or update DocumentTool records for recipient fields
         // This ensures we have the infrastructure to store signatures
