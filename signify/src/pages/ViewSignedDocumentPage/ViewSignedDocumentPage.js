@@ -44,7 +44,18 @@ const ViewSignedDocumentPage = ({ user }) => {
 
         if (toolsResponse.ok) {
           const toolsData = await toolsResponse.json();
-          setTools(Array.isArray(toolsData) ? toolsData : toolsData.data || []);
+          const toolsArray = Array.isArray(toolsData) ? toolsData : toolsData.data || [];
+          console.log('Loaded tools for viewing:', toolsArray);
+          console.log('Tools count:', toolsArray.length);
+          toolsArray.forEach((tool, idx) => {
+            console.log(`Tool ${idx}:`, {
+              id: tool.id || tool._id,
+              label: tool.label,
+              hasValue: !!tool.value,
+              valueLength: tool.value ? tool.value.length : 0
+            });
+          });
+          setTools(toolsArray);
         }
 
         setError(null);
