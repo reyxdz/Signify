@@ -2256,6 +2256,18 @@ app.get("/api/documents/:documentId/export", verifyToken, async (req, resp) => {
         const documentTools = await DocumentTool.find({ documentId: documentId });
 
         console.log(`Exporting document ${documentId} with ${documentTools.length} tools`);
+        
+        documentTools.forEach((tool, idx) => {
+            console.log(`Tool ${idx}:`, {
+                toolId: tool.toolId,
+                label: tool.toolLabel,
+                hasPosition: !!tool.position,
+                hasDimensions: !!tool.dimensions,
+                hasAssignedRecipients: !!tool.assignedRecipients,
+                recipientCount: tool.assignedRecipients?.length || 0,
+                hasLegacySignatureData: !!tool.signatureData
+            });
+        });
 
         // Get current user for recipient-specific signatures
         const currentUser = await User.findById(userId);
