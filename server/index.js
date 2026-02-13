@@ -2305,6 +2305,8 @@ app.get("/api/documents/:documentId/export", verifyToken, async (req, resp) => {
             }
 
             console.log(`Tool ${tool._id}: found ${signaturesToAdd.length} signature(s) to embed`);
+            console.log(`  Position: x=${tool.position.x}, y=${tool.position.y}, page=${tool.position.page}`);
+            console.log(`  Dimensions: w=${tool.dimensions.width}, h=${tool.dimensions.height}`);
 
             for (const recipient of signaturesToAdd) {
                 const signatureData = recipient.signatureData;
@@ -2341,9 +2343,11 @@ app.get("/api/documents/:documentId/export", verifyToken, async (req, resp) => {
                     // Draw the image on the page at the specified position
                     // PDF coordinates: origin at bottom-left, UI coordinates: origin at top-left
                     const x = tool.position.x;
-                    const y = pageHeight - tool.position.y - (tool.dimensions.height || 60);
+                    const y = pageHeight - tool.position.y;
                     const width = tool.dimensions.width || 150;
                     const height = tool.dimensions.height || 60;
+
+                    console.log(`  Embedding: pageHeight=${pageHeight}, calculated y=${y}`);
 
                     page.drawImage(image, {
                         x: x,
