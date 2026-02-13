@@ -32,28 +32,39 @@ function RecipientSigningView({
       // Check if the tool already has signature data (from database)
       if (tool.tool && tool.tool.value) {
         const value = tool.tool.value;
-        console.log(`Tool ${tool.id} (${tool.tool.label}): value =`, {
+        console.log(`Tool ${tool.id} (${tool.tool.label}):`, {
           type: typeof value,
           length: value?.length,
           startsWithDataImage: typeof value === 'string' && value.startsWith('data:image'),
-          preview: typeof value === 'string' ? value.substring(0, 50) : 'not a string'
+          preview: typeof value === 'string' ? value.substring(0, 100) : 'not a string'
         });
         
-        // Only accept valid signature data:
+        // Validate signature data more carefully:
         // - Must be a non-empty string
-        // - Must be reasonably long (actual signatures are much longer than placeholder strings)
-        // - Should be base64 or data URI format (contains typical base64 characters or starts with data:)
+        // - Must be a valid data URI (starts with data:image) OR valid base64
+        // - Don't check length too strictly - canvas signatures can be reasonably short
         const isValidSignature = 
           typeof value === 'string' && 
-          value.trim().length > 100 && // Real signatures are much longer
-          (value.startsWith('data:') || /^[A-Za-z0-9+/=]+$/.test(value)); // Valid base64 or data URI
+          value.trim().length > 0 && 
+          (
+            // Valid data URI
+            (value.startsWith('data:image') && value.length > 50) ||
+            // Valid base64 (at least 50 chars, all valid base64 chars)
+            (value.length > 50 && /^[A-Za-z0-9+/=]+$/.test(value))
+          );
         
         if (isValidSignature) {
-          console.log(`Setting signature for tool ${tool.id} - valid signature detected`);
+          console.log(`✓ Valid signature for tool ${tool.id} - length: ${value.length}`);
           initialSignatures[tool.id] = value;
         } else {
-          console.log(`Ignoring value for tool ${tool.id} - not a valid signature (length: ${value?.length})`);
+          console.log(`✗ Invalid signature for tool ${tool.id}:`, {
+            length: value?.length,
+            startsWithData: value?.startsWith('data:'),
+            reason: value?.length <= 50 ? 'too short' : 'invalid format'
+          });
         }
+      } else {
+        console.log(`Tool ${tool.id} (${tool.tool.label}): no value`);
       }
     });
     
@@ -61,6 +72,7 @@ function RecipientSigningView({
     
     // Only update state if there are signatures to set
     if (Object.keys(initialSignatures).length > 0) {
+      console.log('Setting recipientSignatures:', Object.keys(initialSignatures));
       setRecipientSignatures(prev => ({
         ...initialSignatures,
         ...prev // Keep any new signatures they've added in this session

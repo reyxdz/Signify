@@ -1049,7 +1049,9 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
         // Update each tool with the signature data for this recipient
         const updatedFields = [];
         for (const [fieldId, signatureData] of Object.entries(signatures)) {
-            console.log(`Processing fieldId: ${fieldId}`);
+            console.log(`Processing fieldId: ${fieldId}, signatureData length: ${signatureData?.length}`);
+            console.log(`First 100 chars of signature: ${signatureData?.substring(0, 100)}`);
+            
             // Look up by toolId field first (fieldId is the tool.id from frontend)
             let tool = await DocumentTool.findOne({
                 documentId: documentId,
@@ -1083,6 +1085,8 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
                 
                 if (recipientIndex !== -1) {
                     console.log(`Found recipient at index ${recipientIndex}, updating signature data`);
+                    console.log(`Signature data length: ${signatureData.length}, starts with: ${signatureData.substring(0, 50)}`);
+                    
                     // Update the specific recipient's signature in the array
                     tool.assignedRecipients[recipientIndex].signatureData = signatureData;
                     tool.assignedRecipients[recipientIndex].status = 'signed';
@@ -1097,6 +1101,13 @@ app.post("/api/documents/:documentId/sign", verifyToken, async (req, resp) => {
                     }
                     
                     await tool.save();
+                    console.log(`Saved DocumentTool ${fieldId}. Verifying save...`);
+                    
+                    // Verify the save was successful
+                    const savedTool = await DocumentTool.findById(tool._id);
+                    const savedSigData = savedTool?.assignedRecipients?.[recipientIndex]?.signatureData;
+                    console.log(`Verification: Saved signature data length: ${savedSigData?.length}, starts with: ${savedSigData?.substring(0, 50)}`);
+                    
                     updatedFields.push(fieldId);
                     console.log(`Saved DocumentTool ${fieldId} with signature`);
                 } else {
