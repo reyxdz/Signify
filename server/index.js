@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require("cors");
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { PDFDocument, rgb, PDFImage } = require('pdf-lib');
 require('dotenv').config();
 
 const app = express();
@@ -1312,11 +1313,6 @@ app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
             tool.tool && (tool.tool.label === 'Recipient Signature' || tool.tool.label === 'Recipient Initial')
         );
         
-        console.log(`Saving tools endpoint - checking for recipient fields. Tools count: ${tools.length}, Recipient fields found: ${recipientFields.length}`);
-        tools.forEach((tool, idx) => {
-            console.log(`  Tool ${idx}: label=${tool.tool?.label}`);
-        });
-        
         console.log(`Creating DocumentTool records for ${recipientFields.length} recipient fields`);
         
         for (const field of recipientFields) {
@@ -2144,7 +2140,148 @@ app.post("/api/documents/:documentId/cancel", verifyToken, async (req, resp) => 
 
 // ==================== END DOCUMENT RECIPIENTS ENDPOINTS ====================
 
-// Start the server
+// Export document with signatures embedded as PDF
+app.get("/api/documents/:documentId/export", verifyToken, async (req, resp) => {
+    try {
+        const userId = req.userId;
+        const { documentId } = req.params;
+
+        // Verify document belongs to user or user is recipient
+        const document = await Document.findById(documentId);
+        if (!document) {
+            return resp.status(404).send({ message: "Document not found" });
+        }
+
+        let hasAccess = document.userId.toString() === userId.toString();
+        
+        // Check if user is a recipient
+        if (!hasAccess) {
+            const user = await User.findById(userId);
+            if (user) {
+                const recipient = await DocumentRecipients.findOne({
+                    documentId: documentId,
+                    recipientEmail: { $regex: `^${user.email}$`, $options: 'i' }
+                });
+                hasAccess = !!recipient;
+            }
+        }
+        
+        if (!hasAccess) {
+            return resp.status(403).send({ message: "Not authorized to export this document" });
+        }
+
+        // Get the original PDF
+        if (!document.fileData) {
+            return resp.status(400).send({ message: "Document file data not found" });
+        }
+
+        // Load the PDF
+        const pdfDoc = await PDFDocument.load(document.fileData);
+        const pages = pdfDoc.getPages();
+
+        // Get all tools with signatures for this document
+        const documentTools = await DocumentTool.find({ documentId: documentId });
+
+        console.log(`Exporting document ${documentId} with ${documentTools.length} tools`);
+
+        // Get current user for recipient-specific signatures
+        const currentUser = await User.findById(userId);
+        const currentUserEmail = currentUser ? currentUser.email : null;
+
+        // Add signatures to the PDF
+        for (const tool of documentTools) {
+            if (!tool.position || !tool.dimensions) {
+                console.log(`Skipping tool ${tool._id}: missing position or dimensions`);
+                continue;
+            }
+
+            let signatureData = null;
+
+            // For recipient fields, use the current user's signature
+            if (currentUserEmail && tool.assignedRecipients && tool.assignedRecipients.length > 0) {
+                const userRecipient = tool.assignedRecipients.find(r => 
+                    r.recipientEmail && r.recipientEmail.toLowerCase() === currentUserEmail.toLowerCase()
+                );
+                if (userRecipient && userRecipient.signatureData) {
+                    signatureData = userRecipient.signatureData;
+                }
+            }
+
+            // Fall back to legacy signatureData
+            if (!signatureData && tool.signatureData) {
+                signatureData = tool.signatureData;
+            }
+
+            if (!signatureData) {
+                console.log(`No signature data for tool ${tool._id}, skipping`);
+                continue;
+            }
+
+            // Get the page (1-indexed in database, 0-indexed in pdf-lib)
+            const pageIndex = (tool.position.page || 1) - 1;
+            if (pageIndex >= pages.length || pageIndex < 0) {
+                console.log(`Page ${pageIndex + 1} not found, skipping tool ${tool._id}`);
+                continue;
+            }
+
+            const page = pages[pageIndex];
+            const pageHeight = page.getHeight();
+
+            try {
+                // Parse signature data (could be base64 image or canvas data)
+                let imageData = signatureData;
+                
+                // If it's a data URI, extract the base64 part
+                if (imageData.startsWith('data:image')) {
+                    imageData = imageData.split(',')[1];
+                }
+
+                // Convert base64 to buffer
+                const imageBuffer = Buffer.from(imageData, 'base64');
+                
+                // Embed the image
+                const image = await pdfDoc.embedPng(imageBuffer).catch(async () => {
+                    // Try JPEG if PNG fails
+                    return await pdfDoc.embedJpeg(imageBuffer);
+                });
+
+                // Draw the image on the page at the specified position
+                // Note: PDF coordinates have origin at bottom-left, but we use top-left in the UI
+                const x = tool.position.x;
+                const y = pageHeight - (tool.position.y + (tool.dimensions.height || 60));
+                const width = tool.dimensions.width || 150;
+                const height = tool.dimensions.height || 60;
+
+                page.drawImage(image, {
+                    x: x,
+                    y: y,
+                    width: width,
+                    height: height,
+                });
+
+                console.log(`Added signature for tool ${tool._id} at (${x}, ${y}) size ${width}x${height}`);
+            } catch (error) {
+                console.error(`Error embedding signature for tool ${tool._id}:`, error.message);
+                // Continue with other signatures even if one fails
+            }
+        }
+
+        // Save the modified PDF
+        const pdfBytes = await pdfDoc.save();
+
+        // Send the PDF
+        resp.setHeader('Content-Type', 'application/pdf');
+        resp.setHeader('Content-Disposition', `attachment; filename="${document.name || 'signed-document'}.pdf"`);
+        resp.send(Buffer.from(pdfBytes));
+
+        console.log(`Document ${documentId} exported successfully`);
+    } catch (error) {
+        console.error("Error exporting document:", error);
+        resp.status(500).send({ message: "Error exporting document", error: error.message });
+    }
+});
+
+// ==================== START SERVER ====================
 app.listen(5000, () => {
     console.log("Signify Server is running on port 5000");
 });

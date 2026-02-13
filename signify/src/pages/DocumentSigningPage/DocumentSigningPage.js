@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { PenTool, FileText, Mail, User, Send } from 'lucide-react';
+import { PenTool, FileText, Mail, User, Send, Download } from 'lucide-react';
 import DocumentViewer from './components/DocumentViewer/DocumentViewer';
 import LeftPanel from './components/LeftPanel/LeftPanel';
 import RightPanel from './components/RightPanel/RightPanel';
@@ -100,6 +100,17 @@ function DocumentSigningPage() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Tools received from server:', {
+          toolCount: data.tools?.length,
+          tools: data.tools?.map(t => ({
+            id: t.id,
+            label: t.tool?.label,
+            hasValue: !!t.tool?.value,
+            valueLength: t.tool?.value?.length,
+            valuePreview: typeof t.tool?.value === 'string' ? t.tool.value.substring(0, 50) : 'N/A'
+          }))
+        });
+        
         if (data.tools && data.tools.length > 0) {
           // Reconstruct tools with icons since icons can't be stored in database
           const reconstructedTools = data.tools.map(item => {
@@ -122,6 +133,12 @@ function DocumentSigningPage() {
           });
           
           setDroppedTools(reconstructedTools);
+          console.log('setDroppedTools called with:', reconstructedTools.map(t => ({
+            id: t.id,
+            label: t.tool?.label,
+            hasValue: !!t.tool?.value,
+            valueLength: t.tool?.value?.length,
+          })));
           // Store what we just loaded so we don't immediately re-save it
           lastSavedToolsRef.current = JSON.stringify(
             reconstructedTools.map(item => ({
@@ -341,6 +358,53 @@ function DocumentSigningPage() {
   };
 
   /**
+   * Handle export button click - downloads the document with signatures as PDF
+   */
+  const handleExportDocument = async () => {
+    if (!documentId) {
+      alert('Document ID is missing');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/documents/${documentId}/export`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Get the filename from Content-Disposition header or use default
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = 'signed-document.pdf';
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch) filename = filenameMatch[1];
+        }
+
+        // Create a blob from the response
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else {
+        const error = await response.json();
+        alert('Error exporting document: ' + (error.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error exporting document:', error);
+      alert('Error exporting document: ' + error.message);
+    }
+  };
+
+  /**
    * Handle publish confirmation
    */
   const handlePublish = async (recipients, expiresIn) => {
@@ -413,6 +477,12 @@ function DocumentSigningPage() {
 
   // If recipient mode, show recipient-specific view
   if (isRecipient) {
+    console.log('Rendering RecipientSigningView with droppedTools:', droppedTools.map(t => ({
+      id: t.id,
+      label: t.tool?.label,
+      hasValue: !!t.tool?.value,
+      valueLength: t.tool?.value?.length,
+    })));
     return (
       <RecipientSigningView
         documentName={documentName}
@@ -443,6 +513,10 @@ function DocumentSigningPage() {
         <div className="header-right">
           {!isRecipient ? (
             <>
+              <button className="export-btn" onClick={handleExportDocument} title="Export signed document as PDF">
+                <Download size={18} />
+                Export
+              </button>
               <button className="publish-btn" onClick={handlePublishClick}>
                 <Send size={18} />
                 {isPublished ? 'Published' : 'Publish'}

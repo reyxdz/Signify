@@ -117,6 +117,30 @@
   transform: scale(0.98);
 }
 
+.export-btn {
+  padding: 8px 16px;
+  background-color: #6366f1;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.export-btn:hover {
+  background-color: #4f46e5;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.export-btn:active {
+  transform: scale(0.98);
+}
+
 .signing-container {
   display: flex;
   flex: 1;
