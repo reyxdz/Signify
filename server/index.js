@@ -2258,6 +2258,8 @@ app.get("/api/documents/:documentId/export", verifyToken, async (req, resp) => {
         console.log(`Exporting document ${documentId} with ${documentTools.length} DocumentTool records`);
         documentTools.forEach((tool, idx) => {
             console.log(`  Tool ${idx}: toolId=${tool.toolId}, label=${tool.toolLabel}, hasPosition=${!!tool.position}, hasSignatures=${tool.assignedRecipients?.length || 0}`);
+            console.log(`    Position: x=${tool.position?.x}, y=${tool.position?.y}, page=${tool.position?.page}`);
+            console.log(`    Dimensions: w=${tool.dimensions?.width}, h=${tool.dimensions?.height}`);
             if (tool.assignedRecipients && tool.assignedRecipients.length > 0) {
                 tool.assignedRecipients.forEach((recipient, ridx) => {
                     console.log(`    Recipient ${ridx}: email=${recipient.recipientEmail}, status=${recipient.status}, hasData=${!!recipient.signatureData}`);
