@@ -110,7 +110,11 @@
 .document-viewer-container {
   flex: 1;
   padding: 24px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .loading-container,
