@@ -2358,6 +2358,7 @@ app.get("/api/documents/:documentId/export", verifyToken, async (req, resp) => {
                     // Continue with other signatures even if one fails
                 }
             }
+        }
 
         // Save the modified PDF
         const pdfBytes = await pdfDoc.save();
