@@ -11,6 +11,7 @@ import SignatureSetupModal from './components/Modals/SignatureSetupModal/Signatu
 import Dashboard from './components/Dashboard/Dashboard';
 import DocumentSigningPage from './pages/DocumentSigningPage/DocumentSigningPage';
 import PreviewPage from './pages/PreviewPage/PreviewPage';
+import ViewSignedDocumentPage from './pages/ViewSignedDocumentPage/ViewSignedDocumentPage';
 import './App.css';
 
 function App() {
@@ -87,6 +88,7 @@ function App() {
         <Routes>
           <Route path="/sign" element={<DocumentSigningPage user={user} />} />
           <Route path="/preview" element={<PreviewPage />} />
+          <Route path="/view-document/:documentId" element={<ViewSignedDocumentPage user={user} />} />
           <Route path="/*" element={<Dashboard user={user} onLogout={handleLogout} />} />
         </Routes>
       </Router>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Eye, MoreVertical, FileText, Upload, Search } from 'lucide-react';
 import '../Sections.css';
 
 const Documents = () => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -92,7 +94,11 @@ const Documents = () => {
         </span>
       </div>
       <div className="col-actions">
-        <button className="action-btn" title="View document">
+        <button 
+          className="action-btn" 
+          title="View signed document"
+          onClick={() => navigate(`/view-document/${doc._id}`)}
+        >
           <Eye size={16} />
         </button>
         <button className="action-btn" title="More options">
