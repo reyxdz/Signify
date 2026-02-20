@@ -123,6 +123,18 @@ function DocumentSigningPage({ user }) {
   // Handle recipient access via email link (publishLink in URL)
   useEffect(() => {
     if (publishLink) {
+      console.log('=== DOCUMENT LOADING EFFECT ===');
+      console.log('publishLink:', publishLink);
+      console.log('Current location.search:', location.search);
+      
+      const params = new URLSearchParams(location.search);
+      const verified = params.get('verified');
+      const email = params.get('email');
+      console.log('Extracted params - verified:', verified, 'email:', email);
+      
+      const hasVerificationParams = verified === 'true' && email;
+      console.log('hasVerificationParams:', hasVerificationParams);
+      
       console.log('Recipient accessing document via publishLink:', publishLink);
       
       // Prevent multiple simultaneous fetches
@@ -687,8 +699,12 @@ function DocumentSigningPage({ user }) {
   };
 
   // Show verification screen for email link recipients (verified=true in URL)
-  // But skip if user is already authenticated (don't want to re-verify after login)
-  if (isVerified && verifiedEmail) {
+  // Check both state AND URL params to handle state sync issues
+  const urlParams = new URLSearchParams(location.search);
+  const hasVerificationParams = urlParams.get('verified') === 'true' && urlParams.get('email');
+  const emailFromUrl = urlParams.get('email');
+  
+  if ((isVerified && verifiedEmail) || (hasVerificationParams && !gmailVerified)) {
     // Check if user is already logged in
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -786,12 +802,12 @@ function DocumentSigningPage({ user }) {
             <img src={require('../../assets/images/signify_logo.png')} alt="Signify" style={{ width: '48px', marginBottom: '20px' }} />
             <h2 style={{ color: '#111827', marginBottom: '10px' }}>Sign Document</h2>
             <p style={{ color: '#6b7280', marginBottom: '20px', fontSize: '14px' }}>
-              This document has been shared with <strong>{verifiedEmail}</strong>
+              This document has been shared with <strong>{verifiedEmail || emailFromUrl}</strong>
             </p>
             
             <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
               <p style={{ color: '#92400e', fontSize: '13px', margin: '0' }}>
-                ⚠️ <strong>Important:</strong> When prompted, select or enter the account that matches <strong>{verifiedEmail}</strong>
+                ⚠️ <strong>Important:</strong> When prompted, select or enter the account that matches <strong>{verifiedEmail || emailFromUrl}</strong>
               </p>
             </div>
             
