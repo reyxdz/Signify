@@ -620,30 +620,56 @@ function DocumentSigningPage({ user }) {
           <div style={{ maxWidth: '450px', textAlign: 'center', padding: '40px' }}>
             <img src={require('../../assets/images/signify_logo.png')} alt="Signify" style={{ width: '48px', marginBottom: '20px' }} />
             <h2 style={{ color: '#111827', marginBottom: '10px' }}>Sign Document</h2>
-            <p style={{ color: '#6b7280', marginBottom: '30px', fontSize: '14px' }}>
+            <p style={{ color: '#6b7280', marginBottom: '20px', fontSize: '14px' }}>
               This document has been shared with <strong>{verifiedEmail}</strong>
             </p>
-            <p style={{ color: '#6b7280', marginBottom: '30px' }}>
-              Sign in with the Google account matching this email to automatically access the document:
-            </p>
             
-            <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+            <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' }}>
+              <p style={{ color: '#92400e', fontSize: '13px', margin: '0' }}>
+                ⚠️ <strong>Important:</strong> When the Google Sign-In prompt appears,<br/>please select or enter the account that matches <strong>{verifiedEmail}</strong>
+              </p>
+            </div>
+            
+            <div style={{ marginBottom: '20px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
               <GoogleLogin
                 onSuccess={handleVerifiedGoogleLogin}
                 onError={handleVerificationError}
                 theme="outline"
                 size="large"
-                auto_select={false}
               />
             </div>
 
-            <p style={{ color: '#9ca3af', fontSize: '12px', marginBottom: '20px', marginTop: '10px' }}>
-              💡 Click the button above to select your Gmail account.<br/>
-              If you want to use a different account, choose it from the prompt.
+            <button 
+              onClick={() => {
+                // Open Google logout page in new tab, then reload current page
+                const logoutUrl = 'https://accounts.google.com/logout';
+                window.open(logoutUrl, '_blank');
+                setTimeout(() => {
+                  window.location.reload();
+                }, 500);
+              }}
+              style={{
+                padding: '10px 16px',
+                backgroundColor: '#e5e7eb',
+                color: '#1f2937',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+                marginBottom: '15px',
+                width: '100%',
+              }}
+            >
+              Use Different Account
+            </button>
+
+            <p style={{ color: '#9ca3af', fontSize: '11px', marginBottom: '15px' }}>
+              Not the right account? Click above to sign out and try again.
             </p>
 
-            <p style={{ color: '#9ca3af', fontSize: '12px', marginBottom: '15px' }}>
-              Made a mistake? <button 
+            <p style={{ color: '#9ca3af', fontSize: '12px' }}>
+              <button 
                 onClick={() => navigate('/')}
                 style={{
                   background: 'none',
@@ -654,7 +680,7 @@ function DocumentSigningPage({ user }) {
                   fontSize: '12px'
                 }}
               >
-                Go back
+                Go back to home
               </button>
             </p>
           </div>
