@@ -42,9 +42,18 @@ function DocumentSigningPage({ user }) {
   const [isVerified, setIsVerified] = useState(false);
   const [showVerificationError, setShowVerificationError] = useState(false);
   const [loadTimeout, setLoadTimeout] = useState(false);
+  const [gmailVerified, setGmailVerified] = useState(false);
   const lastSavedToolsRef = useRef(null);
   const documentViewerRef = useRef(null);
   const loadTimeoutRef = useRef(null);
+
+  // If Gmail has been verified and document is loaded, ensure isRecipient is true
+  useEffect(() => {
+    if (gmailVerified && documentId && !isRecipient) {
+      console.log('Gmail verified and document loaded, setting isRecipient to true');
+      setIsRecipient(true);
+    }
+  }, [gmailVerified, documentId, isRecipient]);
 
   // Monitor loading timeout - if loading takes more than 15 seconds, show error
   useEffect(() => {
@@ -504,6 +513,9 @@ function DocumentSigningPage({ user }) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         
+        // Mark Gmail verification as complete
+        setGmailVerified(true);
+        
         // Set isRecipient to true now that email is verified
         setIsRecipient(true);
         
@@ -875,8 +887,8 @@ function DocumentSigningPage({ user }) {
     );
   }
 
-  // If recipient mode, show recipient-specific view
-  if (isRecipient) {
+  // If recipient mode (either explicit or Gmail verified), show recipient-specific view
+  if (isRecipient || (gmailVerified && documentId)) {
     console.log('Rendering RecipientSigningView with droppedTools:', droppedTools.map(t => ({
       id: t.id,
       label: t.tool?.label,
