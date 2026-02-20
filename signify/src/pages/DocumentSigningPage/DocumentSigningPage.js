@@ -102,6 +102,12 @@ function DocumentSigningPage({ user }) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       console.log('Email link accessed with verified token for:', email);
+    } else {
+      // No verification params - reset verification state
+      console.log('No verification params in URL, resetting verification state');
+      setIsVerified(false);
+      setVerifiedEmail(null);
+      setShowVerificationError(false);
     }
   }, [location.search]);
 
@@ -154,8 +160,18 @@ function DocumentSigningPage({ user }) {
           setDocumentName(data.name);
           setFileData(data.fileData);
           setDocumentData(data);
-          setIsRecipient(true);
           setIsPublished(true);
+          
+          // Only set isRecipient if we don't have email verification parameters
+          // If we have verification params (verified=true&email=...), we'll set this after verification
+          const params = new URLSearchParams(location.search);
+          const hasVerificationParams = params.get('verified') === 'true' && params.get('email');
+          
+          if (!hasVerificationParams) {
+            // No verification params - recipient will need to enter email manually
+            setIsRecipient(true);
+          }
+          // If verification params exist, we'll set isRecipient after Gmail login succeeds
 
           // Load tools and reconstruct with icons
           if (data.tools && data.tools.length > 0) {
@@ -487,6 +503,9 @@ function DocumentSigningPage({ user }) {
         // Store token and user
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Set isRecipient to true now that email is verified
+        setIsRecipient(true);
         
         // Navigate to the document signing page without the verification parameters
         // This allows the publishLink to be used for loading the document
