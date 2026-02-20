@@ -507,11 +507,10 @@ function DocumentSigningPage({ user }) {
         // Set isRecipient to true now that email is verified
         setIsRecipient(true);
         
-        // Navigate to the document signing page without the verification parameters
-        // This allows the publishLink to be used for loading the document
-        setTimeout(() => {
-          navigate(`/sign/${publishLink}`, { replace: true });
-        }, 100);
+        // Clear verification state to show recipient signing view
+        // Don't navigate - just let state update to show signing view
+        setIsVerified(false);
+        setVerifiedEmail(null);
       } else {
         console.error('✗ Email mismatch - Gmail does not match invitation email');
         console.error('  Received:', data.user.email);
