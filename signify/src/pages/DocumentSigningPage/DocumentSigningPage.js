@@ -71,7 +71,6 @@ function DocumentSigningPage({ user }) {
       }
     };
   }, [isLoadingFromDb]);
-  const loadTimeoutRef = useRef(null);
 
   // Check for verification parameters in URL
   useEffect(() => {
