@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require("cors");
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const jwtDecode = require('jwt-decode');
 const { PDFDocument, rgb, PDFImage } = require('pdf-lib');
 require('dotenv').config();
 
@@ -14,8 +15,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // MongoDB connection
-const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/signify';
-mongoose.connect(mongoUri, {}).then(async () => {
+mongoose.connect('mongodb://localhost:27017/signify', {}).then(async () => {
     console.log('Connected to signify database');
     
     // Fix: Drop and recreate the publishLink index to ensure sparse constraint
@@ -581,6 +581,120 @@ app.post("/login", async (req, resp) => {
     } catch (e) {
         console.error("Login error:", e);
         resp.status(500).send({ message: "Something went wrong", error: e.message });
+    }
+});
+
+// API to login/signup with Google
+app.post("/google-login", async (req, resp) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return resp.status(400).send({ message: "No Google token provided" });
+        }
+
+        // Decode the Google JWT token (without verification since this is from client)
+        const decoded = jwtDecode(token);
+        const { email, given_name, family_name, picture } = decoded;
+
+        // Check if user exists
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // Create a new user with Google data
+            // For Google login, we use email as address placeholder since Google doesn't provide address
+            user = new User({
+                firstName: given_name || '',
+                lastName: family_name || '',
+                address: 'Not provided',
+                email: email,
+                password: 'google-oauth', // Dummy password for Google users
+            });
+            await user.save();
+            console.log("New user created via Google:", email);
+        }
+
+        // Fetch signature if it exists
+        const signatureData = await Signature.findOne({ userId: user._id });
+
+        // Create JWT token
+        const jwtToken = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '24h' }
+        );
+
+        console.log("User logged in via Google:", email);
+        resp.status(200).send({
+            message: "Google login successful",
+            token: jwtToken,
+            user: {
+                id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                signature: signatureData,
+            }
+        });
+    } catch (e) {
+        console.error("Google login error:", e);
+        resp.status(500).send({ message: "Google login failed", error: e.message });
+    }
+});
+
+// API to signup with Google
+app.post("/google-signup", async (req, resp) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return resp.status(400).send({ message: "No Google token provided" });
+        }
+
+        // Decode the Google JWT token
+        const decoded = jwtDecode(token);
+        const { email, given_name, family_name } = decoded;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return resp.status(400).send({ message: "Email already registered" });
+        }
+
+        // Create a new user with Google data
+        // For Google signup, we use email as address placeholder
+        const user = new User({
+            firstName: given_name || '',
+            lastName: family_name || '',
+            address: 'Not provided',
+            email: email,
+            password: 'google-oauth', // Dummy password for Google users
+        });
+
+        let result = await user.save();
+        console.log("User registered via Google:", email);
+
+        // Create JWT token
+        const jwtToken = jwt.sign(
+            { id: result._id, email: result.email },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '24h' }
+        );
+
+        resp.status(201).send({
+            message: "Google signup successful",
+            token: jwtToken,
+            user: {
+                id: result._id,
+                firstName: result.firstName,
+                lastName: result.lastName,
+                email: result.email,
+                signature: null,
+            }
+        });
+    } catch (e) {
+        console.error("Google signup error:", e);
+        resp.status(500).send({ message: "Google signup failed", error: e.message });
     }
 });
 

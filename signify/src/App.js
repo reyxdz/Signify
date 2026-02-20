@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Header from './components/Header/Header';
 import Hero from './components/Hero/Hero';
 import Features from './components/Features/Features';
@@ -13,6 +14,9 @@ import DocumentSigningPage from './pages/DocumentSigningPage/DocumentSigningPage
 import PreviewPage from './pages/PreviewPage/PreviewPage';
 import ViewSignedDocumentPage from './pages/ViewSignedDocumentPage/ViewSignedDocumentPage';
 import './App.css';
+
+// Get Google Client ID from environment variables
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
 
 function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -84,14 +88,16 @@ function App() {
   // If user is logged in and signature setup is complete, show dashboard
   if (isLoggedIn && user && !showSignatureModal) {
     return (
-      <Router>
-        <Routes>
-          <Route path="/sign" element={<DocumentSigningPage user={user} />} />
-          <Route path="/preview" element={<PreviewPage />} />
-          <Route path="/view-document/:documentId" element={<ViewSignedDocumentPage user={user} />} />
-          <Route path="/*" element={<Dashboard user={user} onLogout={handleLogout} />} />
-        </Routes>
-      </Router>
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <Router>
+          <Routes>
+            <Route path="/sign" element={<DocumentSigningPage user={user} />} />
+            <Route path="/preview" element={<PreviewPage />} />
+            <Route path="/view-document/:documentId" element={<ViewSignedDocumentPage user={user} />} />
+            <Route path="/*" element={<Dashboard user={user} onLogout={handleLogout} />} />
+          </Routes>
+        </Router>
+      </GoogleOAuthProvider>
     );
   }
 
@@ -102,38 +108,41 @@ function App() {
 
   // Otherwise, show landing page
   return (
-    <Router>
-      <Routes>
-        <Route path="/*" element={
-          <div className="App">
-            <Header onSignInClick={handleSignInClick} />
-            <Hero onSignUpClick={handleSignUpClick} />
-            <Features />
-            <CTA onSignUpClick={handleSignUpClick} />
-            <Footer />
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Router>
+        <Routes>
+          <Route path="/*" element={
+            <div className="App">
+              <Header onSignInClick={handleSignInClick} />
+              <Hero onSignUpClick={handleSignUpClick} />
+              <Features />
+              <CTA onSignUpClick={handleSignUpClick} />
+              <Footer />
 
-            {showLoginModal && (
-              <LoginModal 
-                onClose={handleCloseModals} 
-                onSwitchToSignup={handleSwitchToSignup}
-                onLoginSuccess={handleLoginSuccess}
-              />
-            )}
+              {showLoginModal && (
+                <LoginModal 
+                  onClose={handleCloseModals} 
+                  onSwitchToSignup={handleSwitchToSignup}
+                  onLoginSuccess={handleLoginSuccess}
+                />
+              )}
 
-            {showSignupModal && (
-              <SignupModal 
-                onClose={handleCloseModals} 
-                onSwitchToLogin={handleSwitchToLogin}
-              />
-            )}
+              {showSignupModal && (
+                <SignupModal 
+                  onClose={handleCloseModals} 
+                  onSwitchToLogin={handleSwitchToLogin}
+                  onLoginSuccess={handleLoginSuccess}
+                />
+              )}
 
-            {showSignatureModal && (
-              <SignatureSetupModal user={user} onComplete={handleSignatureComplete} />
-            )}
-          </div>
-        } />
-      </Routes>
-    </Router>
+              {showSignatureModal && (
+                <SignatureSetupModal user={user} onComplete={handleSignatureComplete} />
+              )}
+            </div>
+          } />
+        </Routes>
+      </Router>
+    </GoogleOAuthProvider>
   );
 }
 

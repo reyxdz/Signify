@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { GoogleLogin } from '@react-oauth/google';
 import './SignupModal.css';
 
-const SignupModal = ({ onClose, onSwitchToLogin }) => {
+const SignupModal = ({ onClose, onSwitchToLogin, onLoginSuccess }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -72,6 +73,43 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
     if (e.target.classList.contains('modal-overlay')) {
       onClose();
     }
+  };
+
+  const handleGoogleSignup = async (credentialResponse) => {
+    setLoading(true);
+    setErrors({});
+    try {
+      const response = await axios.post('http://localhost:5000/google-signup', {
+        token: credentialResponse.credential,
+      });
+
+      setSuccessMessage('Account created successfully! Signing you in...');
+      setTimeout(() => {
+        // Store token and user data
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Call the success callback
+        if (onLoginSuccess) {
+          onLoginSuccess(response.data.user);
+        }
+        
+        // Close modals
+        onClose();
+      }, 500);
+    } catch (error) {
+      setErrors({ 
+        submit: error.response?.data?.message || 'Google sign up failed. Please try again.' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignupError = () => {
+    setErrors({ 
+      submit: 'Google sign up failed. Please try again.' 
+    });
   };
 
   return (
@@ -168,6 +206,20 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
+
+        <div className="divider">
+          <span>or</span>
+        </div>
+
+        <div className="google-login-container">
+          <GoogleLogin
+            onSuccess={handleGoogleSignup}
+            onError={handleGoogleSignupError}
+            size="large"
+            width="280"
+            locale="en"
+          />
+        </div>
 
         <p className="modal-switch">
           Already have an account? <button type="button" onClick={onSwitchToLogin}>Sign In</button>

@@ -222,6 +222,32 @@ form {
   color: #1d4ed8;
 }
 
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+.divider span {
+  padding: 0 12px;
+}
+
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
 @media (max-width: 480px) {
   .modal-container {
     max-width: 90%;
