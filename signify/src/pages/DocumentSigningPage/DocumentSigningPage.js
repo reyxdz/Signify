@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { PenTool, FileText, Mail, User, Send } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { PenTool, FileText, Mail, User, Send, AlertCircle } from 'lucide-react';
 import DocumentViewer from './components/DocumentViewer/DocumentViewer';
 import LeftPanel from './components/LeftPanel/LeftPanel';
 import RightPanel from './components/RightPanel/RightPanel';
@@ -20,7 +21,7 @@ const ICON_MAP = {
   'Recipient Full Name': User,
 };
 
-function DocumentSigningPage() {
+function DocumentSigningPage({ user }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { publishLink } = useParams();
@@ -37,8 +38,24 @@ function DocumentSigningPage() {
   const [isRecipient, setIsRecipient] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [verifiedEmail, setVerifiedEmail] = useState(null);
+  const [isVerified, setIsVerified] = useState(false);
+  const [showVerificationError, setShowVerificationError] = useState(false);
   const lastSavedToolsRef = useRef(null);
   const documentViewerRef = useRef(null);
+
+  // Check for verification parameters in URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const verified = params.get('verified');
+    const email = params.get('email');
+    
+    if (verified === 'true' && email) {
+      setVerifiedEmail(email);
+      setIsVerified(true);
+      console.log('Email link accessed with verified token for:', email);
+    }
+  }, [location.search]);
 
   // Handle recipient access via email link (publishLink in URL)
   useEffect(() => {
@@ -350,6 +367,55 @@ function DocumentSigningPage() {
     navigate('/');
   };
 
+  // Handle verified Google login (from email link)
+  const handleVerifiedGoogleLogin = async (credentialResponse) => {
+    try {
+      const { credential } = credentialResponse;
+      
+      // Send to backend to verify and login
+      const response = await fetch('http://localhost:5000/api/google-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: credential }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        setShowVerificationError(true);
+        console.error('Login failed:', error);
+        return;
+      }
+
+      const data = await response.json();
+      
+      // Check if the Gmail matches the verified email from the link
+      if (data.user && data.user.email.toLowerCase() === verifiedEmail.toLowerCase()) {
+        console.log('Email verified successfully:', data.user.email);
+        // Store token and user
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Set user state to trigger re-render and automatic document loading
+        // The parent App component should handle this, but since we're in a page component,
+        // we'll just reload to complete the auth flow
+        window.location.reload();
+      } else {
+        console.error('Email mismatch - Gmail does not match invitation email');
+        setShowVerificationError(true);
+      }
+    } catch (error) {
+      console.error('Error during verified Google login:', error);
+      setShowVerificationError(true);
+    }
+  };
+
+  const handleVerificationError = () => {
+    console.error('Google login failed during verification');
+    setShowVerificationError(true);
+  };
+
   const handleDeleteTool = (toolId) => {
     console.log('Deleting tool:', toolId);
     const updatedTools = droppedTools.filter((t) => t.id !== toolId);
@@ -495,6 +561,101 @@ function DocumentSigningPage() {
       throw error;
     }
   };
+
+  // Show verification screen for email link recipients (verified=true in URL)
+  if (isVerified && verifiedEmail && !user && !documentId && !isLoadingFromDb) {
+    if (showVerificationError) {
+      return (
+        <div className="document-signing-page">
+          <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ maxWidth: '400px', textAlign: 'center' }}>
+              <div style={{ marginBottom: '20px', color: '#dc2626' }}>
+                <AlertCircle size={48} style={{ margin: '0 auto' }} />
+              </div>
+              <h2 style={{ color: '#dc2626', marginBottom: '10px' }}>Access Denied</h2>
+              <p style={{ color: '#6b7280', marginBottom: '20px' }}>
+                The Gmail account you signed in with ({user?.email}) does not match the email this document was shared with ({verifiedEmail}).
+              </p>
+              <button 
+                onClick={() => {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  setShowVerificationError(false);
+                  window.location.reload();
+                }}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  marginRight: '10px'
+                }}
+              >
+                Try Another Account
+              </button>
+              <button 
+                onClick={() => navigate('/')}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#e5e7eb',
+                  color: '#1f2937',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Go Home
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="document-signing-page">
+        <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ maxWidth: '450px', textAlign: 'center', padding: '40px' }}>
+            <img src={require('../../assets/images/signify_logo.png')} alt="Signify" style={{ width: '48px', marginBottom: '20px' }} />
+            <h2 style={{ color: '#111827', marginBottom: '10px' }}>Sign Document</h2>
+            <p style={{ color: '#6b7280', marginBottom: '30px', fontSize: '14px' }}>
+              This document has been shared with <strong>{verifiedEmail}</strong>
+            </p>
+            <p style={{ color: '#6b7280', marginBottom: '30px' }}>
+              Sign in with the Google account matching this email to automatically access the document:
+            </p>
+            
+            <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+              <GoogleLogin
+                onSuccess={handleVerifiedGoogleLogin}
+                onError={handleVerificationError}
+                theme="outline"
+                size="large"
+              />
+            </div>
+
+            <p style={{ color: '#9ca3af', fontSize: '12px', marginBottom: '15px' }}>
+              Made a mistake? <button 
+                onClick={() => navigate('/')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#3b82f6',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  fontSize: '12px'
+                }}
+              >
+                Go back
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // If no document is set up, show a loading state
   if (!documentId && !document) {

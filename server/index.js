@@ -2168,7 +2168,7 @@ app.post("/api/documents/:documentId/publish", verifyToken, async (req, resp) =>
         // Send invitation emails to all recipients
         const signingBaseUrl = process.env.REACT_APP_SIGNING_URL || 'http://localhost:3000/sign';
         for (const recipient of recipients) {
-            const signingLink = `${signingBaseUrl}/${publishLink}`;
+            const signingLink = `${signingBaseUrl}/${publishLink}?verified=true&email=${encodeURIComponent(recipient.recipientEmail)}`;
             await sendSigningInvitationEmail(
                 recipient.recipientEmail,
                 recipient.recipientName,
