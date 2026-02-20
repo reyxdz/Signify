@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PenTool, FileText, Mail, User, Send } from 'lucide-react';
 import DocumentViewer from './components/DocumentViewer/DocumentViewer';
 import LeftPanel from './components/LeftPanel/LeftPanel';
@@ -23,6 +23,7 @@ const ICON_MAP = {
 function DocumentSigningPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { publishLink } = useParams();
   const [document, setDocument] = useState(null);
   const [documentName, setDocumentName] = useState('');
   const [documentId, setDocumentId] = useState(null);
@@ -34,11 +35,80 @@ function DocumentSigningPage() {
   const [isPublished, setIsPublished] = useState(false);
   const [documentData, setDocumentData] = useState(null);
   const [isRecipient, setIsRecipient] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   const lastSavedToolsRef = useRef(null);
   const documentViewerRef = useRef(null);
 
-  // If navigated from dashboard with document data, use it
+  // Handle recipient access via email link (publishLink in URL)
   useEffect(() => {
+    if (publishLink) {
+      console.log('Recipient accessing document via publishLink:', publishLink);
+      const fetchPublishedDocument = async () => {
+        try {
+          setIsLoadingFromDb(true);
+          const response = await fetch(`http://localhost:5000/api/documents/published/${publishLink}`);
+          
+          if (!response.ok) {
+            const error = await response.json();
+            setErrorMessage(error.message || 'Failed to load document');
+            return;
+          }
+
+          const data = await response.json();
+          console.log('Published document loaded for recipient:', {
+            name: data.name,
+            hasFileData: !!data.fileData,
+            toolCount: data.tools?.length,
+          });
+
+          setDocumentId(data._id);
+          setDocumentName(data.name);
+          setFileData(data.fileData);
+          setDocumentData(data);
+          setIsRecipient(true);
+          setIsPublished(true);
+
+          // Load tools and reconstruct with icons
+          if (data.tools && data.tools.length > 0) {
+            const reconstructedTools = data.tools.map(item => {
+              const isSignatureImage = item.tool.label === 'My Signature' || item.tool.label === 'My Initial';
+              const isRecipientSignature = item.tool.label === 'Recipient Signature' || item.tool.label === 'Recipient Initial';
+              return {
+                ...item,
+                tool: {
+                  ...item.tool,
+                  icon: ICON_MAP[item.tool.label],
+                },
+                ...(isSignatureImage && !item.width && { width: 120 }),
+                ...(isSignatureImage && !item.height && { height: 80 }),
+                ...(isRecipientSignature && !item.width && { width: 150 }),
+                ...(isRecipientSignature && !item.height && { height: 60 }),
+              };
+            });
+            setDroppedTools(reconstructedTools);
+          }
+        } catch (error) {
+          console.error('Error loading published document:', error);
+          setErrorMessage('Failed to load document. The link may have expired.');
+        } finally {
+          setIsLoadingFromDb(false);
+        }
+      };
+
+      fetchPublishedDocument();
+      return; // Don't continue with other logic when handling publishLink
+    }
+
+    // If user is logged in and signature setup is complete, show dashboard
+  }, [publishLink]);
+
+  // If navigated from dashboard with document data, use it (authenticated user flow)
+  useEffect(() => {
+    // Skip this effect if handling publishLink
+    if (publishLink) {
+      return;
+    }
     if (location.state?.document) {
       const doc = location.state.document;
       const id = location.state.documentId || doc._id || doc.id;
@@ -83,7 +153,7 @@ function DocumentSigningPage() {
         navigate('/');
       }
     }
-  }, [location.state, navigate]);
+  }, [location.state, navigate, publishLink]);
 
   // Function to load tools from database
   const loadToolsFromDatabase = async (docId) => {
@@ -428,6 +498,30 @@ function DocumentSigningPage() {
 
   // If no document is set up, show a loading state
   if (!documentId && !document) {
+    if (errorMessage) {
+      return (
+        <div className="document-signing-page">
+          <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ color: '#dc2626', fontSize: '16px', marginBottom: '20px' }}>{errorMessage}</p>
+              <button 
+                onClick={() => navigate('/')}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="document-signing-page">
         <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -453,12 +547,13 @@ function DocumentSigningPage() {
         documentId={documentId}
         fileData={fileData}
         droppedTools={droppedTools}
+        publishLink={publishLink}
         onSign={(signatures) => {
           console.log('Signatures submitted:', signatures);
           // Signature submission is handled in RecipientSigningView
         }}
         onCancel={() => {
-          navigate('/dashboard');
+          navigate('/');
         }}
       />
     );

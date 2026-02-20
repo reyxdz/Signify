@@ -295,3 +295,33 @@
   text-align: center;
   margin: 0;
 }
+
+.email-dialog-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 32px;
+}
+
+.email-dialog {
+  background: white;
+  border-radius: 8px;
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.email-dialog h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+.email-dialog p {
+  color: #6b7280;
+  margin: 0 0 20px 0;
+  font-size: 14px;
+}

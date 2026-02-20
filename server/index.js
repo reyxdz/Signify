@@ -1468,6 +1468,212 @@ app.get("/api/documents/:documentId", verifyToken, async (req, resp) => {
     }
 });
 
+// PUBLIC API - Get published document by publishLink (for recipients accessing via email)
+// No authentication required
+// GET /api/documents/published/:publishLink
+app.get("/api/documents/published/:publishLink", async (req, resp) => {
+    try {
+        const { publishLink } = req.params;
+
+        if (!publishLink) {
+            return resp.status(400).send({ message: "Publish link is required" });
+        }
+
+        // Find document by publishLink
+        const document = await Document.findOne({ publishLink: publishLink });
+
+        if (!document) {
+            return resp.status(404).send({ message: "Document not found or link is invalid" });
+        }
+
+        // Check if publish link has expired
+        if (document.publishLinkExpiry && new Date() > new Date(document.publishLinkExpiry)) {
+            return resp.status(410).send({ message: "This document link has expired" });
+        }
+
+        // Check if document is still published
+        if (document.publishedStatus !== 'published') {
+            return resp.status(403).send({ message: "This document is no longer available for signing" });
+        }
+
+        console.log("Document fetch via publishLink - has fileData:", !!document.fileData);
+
+        // Convert fileData to base64 for JSON transmission
+        const documentObj = document.toObject();
+        if (documentObj.fileData) {
+            console.log("Converting fileData to base64");
+            let binaryData = documentObj.fileData;
+            if (typeof binaryData === 'object' && binaryData.buffer) {
+                binaryData = binaryData.buffer;
+            }
+            if (Buffer.isBuffer(binaryData)) {
+                documentObj.fileData = binaryData.toString('base64');
+                console.log("fileData converted to base64, length:", documentObj.fileData.length);
+            } else {
+                console.log("WARNING: fileData is not a buffer, type:", typeof binaryData);
+                documentObj.fileData = null;
+            }
+        }
+
+        // Fetch tools for this document
+        const documentTools = await DocumentTools.findOne({ documentId: document._id });
+        let tools = documentTools ? documentTools.tools : [];
+        documentObj.tools = tools;
+
+        // Include publish information and recipients
+        documentObj.publishLink = publishLink;
+        documentObj.publishedRecipients = document.publishedRecipients || [];
+        documentObj.expiresAt = document.publishLinkExpiry;
+
+        resp.status(200).send({
+            message: "Document retrieved successfully",
+            data: documentObj,
+        });
+    } catch (error) {
+        console.error("Error fetching published document:", error);
+        resp.status(500).send({ message: "Error fetching document", error: error.message });
+    }
+});
+
+// POST /api/documents/published/:publishLink/sign - Submit signatures for a published document (no auth required)
+app.post("/api/documents/published/:publishLink/sign", async (req, resp) => {
+    try {
+        const { publishLink } = req.params;
+        const { signatures, recipientEmail } = req.body;
+
+        if (!publishLink) {
+            return resp.status(400).send({ message: "Publish link is required" });
+        }
+
+        if (!signatures || typeof signatures !== 'object') {
+            return resp.status(400).send({ message: "Signatures object is required" });
+        }
+
+        // Find document by publishLink
+        const document = await Document.findOne({ publishLink: publishLink });
+
+        if (!document) {
+            return resp.status(404).send({ message: "Document not found or link is invalid" });
+        }
+
+        // Check if publish link has expired
+        if (document.publishLinkExpiry && new Date() > new Date(document.publishLinkExpiry)) {
+            return resp.status(410).send({ message: "This document link has expired" });
+        }
+
+        // Check if document is still published
+        if (document.publishedStatus !== 'published') {
+            return resp.status(403).send({ message: "This document is no longer available for signing" });
+        }
+
+        // Update each tool with the signature data
+        const updatedFields = [];
+        for (const [fieldId, signatureData] of Object.entries(signatures)) {
+            // Look up by toolId field first
+            let tool = await DocumentTool.findOne({
+                documentId: document._id,
+                toolId: String(fieldId)
+            });
+            
+            // Fall back to finding by _id if it's a valid ObjectId
+            if (!tool && mongoose.Types.ObjectId.isValid(fieldId)) {
+                tool = await DocumentTool.findById(fieldId);
+            }
+            
+            if (tool) {
+                // If there's a recipientEmail provided, update just that recipient
+                // Otherwise update the first unsigned recipient or all if only one assigned
+                if (recipientEmail && tool.assignedRecipients && tool.assignedRecipients.length > 0) {
+                    let recipientIndex = tool.assignedRecipients.findIndex(r => 
+                        r.recipientEmail && r.recipientEmail.toLowerCase() === recipientEmail.toLowerCase()
+                    );
+                    
+                    if (recipientIndex !== -1) {
+                        tool.assignedRecipients[recipientIndex].signatureData = signatureData;
+                        tool.assignedRecipients[recipientIndex].status = 'signed';
+                        tool.assignedRecipients[recipientIndex].signedAt = new Date();
+                        updatedFields.push(fieldId);
+                    }
+                } else {
+                    // No recipientEmail provided, update signature data for display
+                    // This is for when user doesn't have email validated
+                    tool.signatureData = signatureData;
+                    tool.signedAt = new Date();
+                    
+                    if (tool.assignedRecipients && tool.assignedRecipients.length > 0) {
+                        tool.assignedRecipients.forEach(recipient => {
+                            if (recipient.status !== 'signed') {
+                                recipient.signatureData = signatureData;
+                                recipient.status = 'signed';
+                                recipient.signedAt = new Date();
+                            }
+                        });
+                    }
+                    
+                    updatedFields.push(fieldId);
+                }
+                
+                await tool.save();
+            }
+        }
+
+        // Update document status
+        document.signedStatus = 'signed';
+        document.signingCompletedAt = new Date();
+        
+        // Update recipient status if we have recipient email
+        if (recipientEmail) {
+            const recipient = await DocumentRecipients.findOne({
+                documentId: document._id,
+                recipientEmail: { $regex: `^${recipientEmail}$`, $options: 'i' }
+            });
+            
+            if (recipient) {
+                recipient.status = 'signed';
+                recipient.signedAt = new Date();
+                recipient.lastAccessedAt = new Date();
+                recipient.accessCount = (recipient.accessCount || 0) + 1;
+                await recipient.save();
+                
+                // Check if all recipients have signed
+                const allRecipients = await DocumentRecipients.find({ documentId: document._id });
+                const allSigned = allRecipients.every(r => r.status === 'signed');
+                
+                if (allSigned) {
+                    document.status = 'completed';
+                    document.completedAt = new Date();
+                }
+                
+                // Create activity log
+                const activity = new Activity({
+                    userId: document.ownerId,
+                    type: 'document_signed',
+                    title: `Signed document: ${document.name}`,
+                    description: `Recipient ${recipientEmail} signed the document`,
+                    details: updatedFields.length + ' field(s) signed',
+                    relatedDocumentId: document._id,
+                });
+                
+                await activity.save();
+            }
+        }
+        
+        await document.save();
+
+        console.log("Document signatures submitted successfully via publishLink, fields updated:", updatedFields.length);
+
+        resp.status(200).send({
+            message: "Document signed successfully",
+            documentId: document._id,
+            signingCompletedAt: document.signingCompletedAt,
+            updatedFields: updatedFields.length
+        });
+    } catch (error) {
+        console.error("Error submitting signatures:", error);
+        resp.status(500).send({ message: "Error submitting signatures", error: error.message });
+    }
+});
+
 // API to save document tools/fields
 app.post("/api/documents/:documentId/tools", verifyToken, async (req, resp) => {
     try {

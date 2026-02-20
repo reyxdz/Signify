@@ -91,6 +91,7 @@ function App() {
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
         <Router>
           <Routes>
+            <Route path="/sign/:publishLink" element={<DocumentSigningPage user={user} />} />
             <Route path="/sign" element={<DocumentSigningPage user={user} />} />
             <Route path="/preview" element={<PreviewPage />} />
             <Route path="/view-document/:documentId" element={<ViewSignedDocumentPage user={user} />} />

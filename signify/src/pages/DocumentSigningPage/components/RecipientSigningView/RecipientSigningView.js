@@ -11,12 +11,15 @@ function RecipientSigningView({
   droppedTools,
   onSign,
   onCancel,
+  publishLink,
 }) {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [currentField, setCurrentField] = useState(null);
   const [recipientSignatures, setRecipientSignatures] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(publishLink ? true : false);
+  const [recipientEmailInput, setRecipientEmailInput] = useState('');
 
   // Get recipient fields (fields that start with "Recipient")
   const recipientFields = droppedTools.filter(tool => 
@@ -114,45 +117,77 @@ function RecipientSigningView({
       return;
     }
 
+    // For public access, require email
+    if (publishLink && !recipientEmailInput) {
+      alert('Please enter your email address before submitting');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/documents/${documentId}/sign`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          signatures: recipientSignatures,
-        }),
-      });
+      
+      // If we have a publishLink, use the public endpoint for recipient signature submission
+      if (publishLink) {
+        const response = await fetch(`http://localhost:5000/api/documents/published/${publishLink}/sign`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            signatures: recipientSignatures,
+            recipientEmail: recipientEmailInput,
+          }),
+        });
 
-      if (response.ok) {
-        // Fetch the updated document tools to show the signatures on the document
-        try {
-          const docResponse = await fetch(`http://localhost:5000/api/documents/${documentId}/tools`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
-          if (docResponse.ok) {
-            const docData = await docResponse.json();
-            // Update droppedTools with the new signature data
-            if (docData.data && Array.isArray(docData.data)) {
-              // Here we would update the tools, but since we're closing the view anyway,
-              // the signatures will be visible when the user returns to the dashboard
-            }
-          }
-        } catch (error) {
-          console.log('Could not fetch updated document:', error);
+        if (response.ok) {
+          setSubmitSuccess(true);
+          setTimeout(() => {
+            onCancel(); // Return to home page after success
+          }, 2000);
+        } else {
+          const error = await response.json();
+          alert('Error submitting signatures: ' + error.message);
         }
-
-        setSubmitSuccess(true);
-        setTimeout(() => {
-          onCancel(); // Return to dashboard after success
-        }, 2000);
       } else {
-        const error = await response.json();
-        alert('Error submitting signatures: ' + error.message);
+        // Authenticated endpoint for logged-in users
+        const response = await fetch(`http://localhost:5000/api/documents/${documentId}/sign`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            signatures: recipientSignatures,
+          }),
+        });
+
+        if (response.ok) {
+          // Fetch the updated document tools to show the signatures on the document
+          try {
+            const docResponse = await fetch(`http://localhost:5000/api/documents/${documentId}/tools`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (docResponse.ok) {
+              const docData = await docResponse.json();
+              // Update droppedTools with the new signature data
+              if (docData.data && Array.isArray(docData.data)) {
+                // Here we would update the tools, but since we're closing the view anyway,
+                // the signatures will be visible when the user returns to the dashboard
+              }
+            }
+          } catch (error) {
+            console.log('Could not fetch updated document:', error);
+          }
+
+          setSubmitSuccess(true);
+          setTimeout(() => {
+            onCancel(); // Return to dashboard after success
+          }, 2000);
+        } else {
+          const error = await response.json();
+          alert('Error submitting signatures: ' + error.message);
+        }
       }
     } catch (error) {
       console.error('Error submitting signatures:', error);
@@ -174,7 +209,83 @@ function RecipientSigningView({
             <Check size={64} />
           </div>
           <h2>Document Signed Successfully!</h2>
-          <p>Thank you for signing the document. You will be redirected to the dashboard.</p>
+          <p>Thank you for signing the document. You will be redirected.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Email dialog for recipients accessing via email link
+  if (showEmailDialog) {
+    return (
+      <div className="recipient-signing-view">
+        <div className="recipient-header">
+          <img src={require('../../../../assets/images/signify_logo.png')} alt="Signify" className="header-logo" />
+          <span className="header-brand">Signify</span>
+        </div>
+        <div className="email-dialog-container">
+          <div className="email-dialog">
+            <h2>Verify Your Email</h2>
+            <p>Please enter the email address you were invited with to sign this document:</p>
+            <input
+              type="email"
+              placeholder="Enter your email address"
+              value={recipientEmailInput}
+              onChange={(e) => setRecipientEmailInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && recipientEmailInput) {
+                  setShowEmailDialog(false);
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '12px',
+                marginBottom: '20px',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => onCancel()}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: '#e5e7eb',
+                  color: '#1f2937',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (recipientEmailInput) {
+                    setShowEmailDialog(false);
+                  } else {
+                    alert('Please enter your email address');
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
