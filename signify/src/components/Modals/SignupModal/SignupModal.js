@@ -138,6 +138,7 @@ const SignupModal = ({ onClose, onSwitchToLogin, onLoginSuccess }) => {
                 value={formData.firstName}
                 onChange={handleChange}
                 placeholder="John"
+                autoComplete="given-name"
               />
               {errors.firstName && <span className="error">{errors.firstName}</span>}
             </div>
@@ -149,6 +150,7 @@ const SignupModal = ({ onClose, onSwitchToLogin, onLoginSuccess }) => {
                 value={formData.lastName}
                 onChange={handleChange}
                 placeholder="Doe"
+                autoComplete="family-name"
               />
               {errors.lastName && <span className="error">{errors.lastName}</span>}
             </div>
@@ -174,6 +176,7 @@ const SignupModal = ({ onClose, onSwitchToLogin, onLoginSuccess }) => {
               value={formData.email}
               onChange={handleChange}
               placeholder="you@example.com"
+              autoComplete="email"
             />
             {errors.email && <span className="error">{errors.email}</span>}
           </div>
@@ -186,6 +189,7 @@ const SignupModal = ({ onClose, onSwitchToLogin, onLoginSuccess }) => {
               value={formData.password}
               onChange={handleChange}
               placeholder="••••••••"
+              autoComplete="new-password"
             />
             {errors.password && <span className="error">{errors.password}</span>}
           </div>
@@ -198,6 +202,7 @@ const SignupModal = ({ onClose, onSwitchToLogin, onLoginSuccess }) => {
               value={formData.confirmPassword}
               onChange={handleChange}
               placeholder="••••••••"
+              autoComplete="new-password"
             />
             {errors.confirmPassword && <span className="error">{errors.confirmPassword}</span>}
           </div>

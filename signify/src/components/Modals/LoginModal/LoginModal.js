@@ -121,6 +121,7 @@ const LoginModal = ({ onClose, onSwitchToSignup, onLoginSuccess }) => {
               value={formData.email}
               onChange={handleChange}
               placeholder="you@example.com"
+              autoComplete="email"
             />
             {errors.email && <span className="error">{errors.email}</span>}
           </div>
@@ -133,6 +134,7 @@ const LoginModal = ({ onClose, onSwitchToSignup, onLoginSuccess }) => {
               value={formData.password}
               onChange={handleChange}
               placeholder="••••••••"
+              autoComplete="current-password"
             />
             {errors.password && <span className="error">{errors.password}</span>}
           </div>
