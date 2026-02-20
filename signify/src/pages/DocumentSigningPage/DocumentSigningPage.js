@@ -41,8 +41,37 @@ function DocumentSigningPage({ user }) {
   const [verifiedEmail, setVerifiedEmail] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
   const [showVerificationError, setShowVerificationError] = useState(false);
+  const [loadTimeout, setLoadTimeout] = useState(false);
   const lastSavedToolsRef = useRef(null);
   const documentViewerRef = useRef(null);
+  const loadTimeoutRef = useRef(null);
+
+  // Monitor loading timeout - if loading takes more than 15 seconds, show error
+  useEffect(() => {
+    if (isLoadingFromDb) {
+      console.log('Loading started...');
+      loadTimeoutRef.current = setTimeout(() => {
+        console.error('Load timeout - document took too long to load');
+        setLoadTimeout(true);
+        setErrorMessage('Document is taking too long to load. Please try again.');
+        setIsLoadingFromDb(false);
+      }, 15000);
+    } else {
+      // Clear timeout when loading finishes
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = null;
+      }
+      setLoadTimeout(false);
+    }
+
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+      }
+    };
+  }, [isLoadingFromDb]);
+  const loadTimeoutRef = useRef(null);
 
   // Check for verification parameters in URL
   useEffect(() => {
@@ -775,20 +804,42 @@ function DocumentSigningPage({ user }) {
         <div className="document-signing-page">
           <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ textAlign: 'center' }}>
-              <p style={{ color: '#dc2626', fontSize: '16px', marginBottom: '20px' }}>{errorMessage}</p>
-              <button 
-                onClick={() => navigate('/')}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                Back to Dashboard
-              </button>
+              <div style={{ marginBottom: '20px', color: '#dc2626' }}>
+                <AlertCircle size={48} style={{ margin: '0 auto' }} />
+              </div>
+              <h2 style={{ color: '#dc2626', marginBottom: '10px' }}>Unable to Load Document</h2>
+              <p style={{ color: '#6b7280', fontSize: '16px', marginBottom: '20px' }}>{errorMessage}</p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button 
+                  onClick={() => {
+                    // Retry by refreshing or reloading
+                    window.location.reload();
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Retry
+                </button>
+                <button 
+                  onClick={() => navigate('/')}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#e5e7eb',
+                    color: '#1f2937',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Back to Dashboard
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -798,7 +849,8 @@ function DocumentSigningPage({ user }) {
       <div className="document-signing-page">
         <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <p style={{ color: '#6b7280' }}>Loading...</p>
+            <p style={{ color: '#6b7280' }}>Loading document...</p>
+            <p style={{ color: '#9ca3af', fontSize: '12px', marginTop: '10px' }}>This may take a few moments</p>
           </div>
         </div>
       </div>
