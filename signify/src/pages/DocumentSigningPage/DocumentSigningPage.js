@@ -81,18 +81,40 @@ function DocumentSigningPage({ user }) {
   useEffect(() => {
     if (publishLink) {
       console.log('Recipient accessing document via publishLink:', publishLink);
+      
+      // Prevent multiple simultaneous fetches
+      let isMounted = true;
+      
       const fetchPublishedDocument = async () => {
         try {
+          if (!isMounted) return;
           setIsLoadingFromDb(true);
-          const response = await fetch(`http://localhost:5000/api/documents/published/${publishLink}`);
+          console.log('Starting fetch for published document...');
+          
+          // Create an abort controller with 10 second timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          
+          const response = await fetch(`http://localhost:5000/api/documents/published/${publishLink}`, {
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!isMounted) return;
           
           if (!response.ok) {
+            console.error('Response not ok:', response.status);
             const error = await response.json();
             setErrorMessage(error.message || 'Failed to load document');
+            setIsLoadingFromDb(false);
             return;
           }
 
           const data = await response.json();
+          
+          if (!isMounted) return;
+          
           console.log('Published document loaded for recipient:', {
             name: data.name,
             hasFileData: !!data.fileData,
@@ -125,16 +147,29 @@ function DocumentSigningPage({ user }) {
             });
             setDroppedTools(reconstructedTools);
           }
+          
+          if (isMounted) {
+            setIsLoadingFromDb(false);
+          }
         } catch (error) {
           console.error('Error loading published document:', error);
-          setErrorMessage('Failed to load document. The link may have expired.');
-        } finally {
-          setIsLoadingFromDb(false);
+          if (error.name === 'AbortError') {
+            setErrorMessage('Document load timed out. Please try again.');
+          } else {
+            setErrorMessage('Failed to load document. The link may have expired.');
+          }
+          if (isMounted) {
+            setIsLoadingFromDb(false);
+          }
         }
       };
 
       fetchPublishedDocument();
-      return; // Don't continue with other logic when handling publishLink
+      
+      // Cleanup function to prevent state updates on unmount
+      return () => {
+        isMounted = false;
+      };
     }
 
     // If user is logged in and signature setup is complete, show dashboard
