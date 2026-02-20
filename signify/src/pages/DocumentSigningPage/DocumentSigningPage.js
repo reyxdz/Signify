@@ -50,9 +50,14 @@ function DocumentSigningPage({ user }) {
     const verified = params.get('verified');
     const email = params.get('email');
     
+    console.log('URL params check - verified:', verified, 'email:', email);
+    
     if (verified === 'true' && email) {
       setVerifiedEmail(email);
       setIsVerified(true);
+      // Clear any old user data that might block verification screen
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       console.log('Email link accessed with verified token for:', email);
     }
   }, [location.search]);
@@ -563,7 +568,21 @@ function DocumentSigningPage({ user }) {
   };
 
   // Show verification screen for email link recipients (verified=true in URL)
-  if (isVerified && verifiedEmail && !user && !documentId && !isLoadingFromDb) {
+  if (isVerified && verifiedEmail) {
+    console.log('Verification screen conditions met. isVerified:', isVerified, 'verifiedEmail:', verifiedEmail, 'user:', user, 'documentId:', documentId, 'isLoadingFromDb:', isLoadingFromDb);
+    
+    if (isLoadingFromDb) {
+      return (
+        <div className="document-signing-page">
+          <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ color: '#6b7280' }}>Loading...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     if (showVerificationError) {
       return (
         <div className="document-signing-page">
@@ -574,7 +593,7 @@ function DocumentSigningPage({ user }) {
               </div>
               <h2 style={{ color: '#dc2626', marginBottom: '10px' }}>Access Denied</h2>
               <p style={{ color: '#6b7280', marginBottom: '20px' }}>
-                The Gmail account you signed in with ({user?.email}) does not match the email this document was shared with ({verifiedEmail}).
+                The Gmail account you signed in with does not match the email this document was shared with (<strong>{verifiedEmail}</strong>).
               </p>
               <button 
                 onClick={() => {
