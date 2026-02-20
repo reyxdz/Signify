@@ -140,7 +140,8 @@ function DocumentSigningPage({ user }) {
             return;
           }
 
-          const data = await response.json();
+          const responseData = await response.json();
+          const data = responseData.data || responseData; // Handle both wrapped and unwrapped responses
           
           if (!isMounted) return;
           
