@@ -53,6 +53,21 @@ function DocumentSigningPage({ user }) {
     console.log('URL params check - verified:', verified, 'email:', email);
     
     if (verified === 'true' && email) {
+      // Check if user is already logged in with this email
+      const token = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+      
+      if (token && savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          // User is already logged in, skip verification screen and proceed to document
+          console.log('User already authenticated as:', user.email);
+          return;
+        } catch (e) {
+          console.error('Error parsing saved user:', e);
+        }
+      }
+      
       setVerifiedEmail(email);
       setIsVerified(true);
       // Clear any old user data that might block verification screen
@@ -409,10 +424,11 @@ function DocumentSigningPage({ user }) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         
-        // Set user state to trigger re-render and automatic document loading
-        // The parent App component should handle this, but since we're in a page component,
-        // we'll just reload to complete the auth flow
-        window.location.reload();
+        // Navigate to the document signing page without the verification parameters
+        // This allows the publishLink to be used for loading the document
+        setTimeout(() => {
+          navigate(`/sign/${publishLink}`, { replace: true });
+        }, 100);
       } else {
         console.error('✗ Email mismatch - Gmail does not match invitation email');
         console.error('  Received:', data.user.email);
@@ -577,22 +593,46 @@ function DocumentSigningPage({ user }) {
   };
 
   // Show verification screen for email link recipients (verified=true in URL)
+  // But skip if user is already authenticated (don't want to re-verify after login)
   if (isVerified && verifiedEmail) {
-    console.log('Verification screen conditions met. isVerified:', isVerified, 'verifiedEmail:', verifiedEmail, 'user:', user, 'documentId:', documentId, 'isLoadingFromDb:', isLoadingFromDb);
+    // Check if user is already logged in
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
     
-    if (isLoadingFromDb) {
-      return (
-        <div className="document-signing-page">
-          <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ color: '#6b7280' }}>Loading...</p>
+    console.log('Verification screen conditions met. isVerified:', isVerified, 'verifiedEmail:', verifiedEmail, 'hasToken:', !!token, 'hasUser:', !!savedUser, 'isLoadingFromDb:', isLoadingFromDb);
+    
+    // If user is already logged in, skip verification and proceed with document loading
+    if (token && savedUser) {
+      console.log('User already authenticated, skipping verification screen');
+      // Don't show verification screen - let the document loading logic handle the rest
+      // Just reset the verification state so it doesn't keep showing
+      if (isLoadingFromDb) {
+        return (
+          <div className="document-signing-page">
+            <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ color: '#6b7280' }}>Loading document...</p>
+              </div>
             </div>
           </div>
-        </div>
-      );
-    }
-    
-    if (showVerificationError) {
+        );
+      }
+      // Fall through to normal rendering below - document should load normally
+    } else {
+      // User not logged in yet, show verification screen
+      if (isLoadingFromDb) {
+        return (
+          <div className="document-signing-page">
+            <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ color: '#6b7280' }}>Loading...</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      if (showVerificationError) {
       return (
         <div className="document-signing-page">
           <div className="signing-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -690,6 +730,7 @@ function DocumentSigningPage({ user }) {
         </div>
       </div>
     );
+    }
   }
 
   // If no document is set up, show a loading state
