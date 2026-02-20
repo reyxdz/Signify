@@ -19,6 +19,7 @@
     "jsonwebtoken": "^9.0.0",
     "jwt-decode": "^4.0.0",
     "mongoose": "^7.0.0",
+    "nodemailer": "^8.0.1",
     "pdf-lib": "^1.17.1"
   },
   "devDependencies": {

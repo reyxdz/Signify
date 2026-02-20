@@ -3,13 +3,84 @@ const express = require('express');
 const cors = require("cors");
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const jwtDecode = require('jwt-decode');
+const { jwtDecode } = require('jwt-decode');
 const { PDFDocument, rgb, PDFImage } = require('pdf-lib');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
 
-// Middleware
+// Email Transporter Configuration (Gmail SMTP)
+let transporter = null;
+if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD,
+        },
+    });
+} else {
+    console.warn('Email configuration not set. Email notifications will be disabled.');
+}
+
+// Function to send email to recipient
+const sendSigningInvitationEmail = async (recipientEmail, recipientName, documentName, signingLink) => {
+    if (!transporter) {
+        console.log('Email transporter not configured. Skipping email for:', recipientEmail);
+        return;
+    }
+
+    const mailOptions = {
+        from: `${process.env.EMAIL_USER}`,
+        to: recipientEmail,
+        subject: `You're invited to sign: ${documentName}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1f2937;">You've been invited to sign a document</h2>
+                
+                <p>Hi ${recipientName || recipientEmail},</p>
+                
+                <p>You have been invited to review and sign the following document:</p>
+                
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0; font-weight: bold; font-size: 18px;">${documentName}</p>
+                </div>
+                
+                <p>Click the button below to sign the document:</p>
+                
+                <div style="margin: 30px 0; text-align: center;">
+                    <a href="${signingLink}" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                        Sign Document
+                    </a>
+                </div>
+                
+                <p style="color: #6b7280; font-size: 14px;">Or copy and paste this link in your browser:</p>
+                <p style="background-color: #f9fafb; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 12px;">
+                    ${signingLink}
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+                
+                <p style="color: #6b7280; font-size: 12px;">
+                    This link will expire in 30 days.<br>
+                    If you have any questions, please contact the sender.
+                </p>
+                
+                <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">
+                    Signify - Secure Digital Signatures
+                </p>
+            </div>
+        `,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('Email sent to:', recipientEmail);
+    } catch (error) {
+        console.error('Error sending email to', recipientEmail, ':', error.message);
+    }
+};
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -1887,6 +1958,18 @@ app.post("/api/documents/:documentId/publish", verifyToken, async (req, resp) =>
         });
 
         await activity.save();
+
+        // Send invitation emails to all recipients
+        const signingBaseUrl = process.env.REACT_APP_SIGNING_URL || 'http://localhost:3000/sign';
+        for (const recipient of recipients) {
+            const signingLink = `${signingBaseUrl}/${publishLink}`;
+            await sendSigningInvitationEmail(
+                recipient.recipientEmail,
+                recipient.recipientName,
+                document.name,
+                signingLink
+            );
+        }
 
         resp.status(200).send({
             message: "Document published successfully",
