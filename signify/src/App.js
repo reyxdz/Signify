@@ -85,62 +85,57 @@ function App() {
     localStorage.removeItem('user');
   };
 
-  // If user is logged in and signature setup is complete, show dashboard
-  if (isLoggedIn && user && !showSignatureModal) {
-    return (
-      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <Router>
-          <Routes>
-            <Route path="/sign/:publishLink" element={<DocumentSigningPage user={user} />} />
-            <Route path="/sign" element={<DocumentSigningPage user={user} />} />
-            <Route path="/preview" element={<PreviewPage />} />
-            <Route path="/view-document/:documentId" element={<ViewSignedDocumentPage user={user} />} />
-            <Route path="/*" element={<Dashboard user={user} onLogout={handleLogout} />} />
-          </Routes>
-        </Router>
-      </GoogleOAuthProvider>
-    );
-  }
-
-  // If user is logged in but needs to set up signature, show modal
-  if (isLoggedIn && user && showSignatureModal) {
-    return <SignatureSetupModal user={user} onComplete={handleSignatureComplete} />;
-  }
-
-  // Otherwise, show landing page
+  // Main Router - handles all routes
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <Router>
         <Routes>
-          <Route path="/*" element={
-            <div className="App">
-              <Header onSignInClick={handleSignInClick} />
-              <Hero onSignUpClick={handleSignUpClick} />
-              <Features />
-              <CTA onSignUpClick={handleSignUpClick} />
-              <Footer />
+          {/* Public route for recipient signing (via email link) - no auth required */}
+          <Route path="/sign/:publishLink" element={<DocumentSigningPage user={user} />} />
+          
+          {/* Protected routes - require login */}
+          {isLoggedIn && user && !showSignatureModal && (
+            <>
+              <Route path="/sign" element={<DocumentSigningPage user={user} />} />
+              <Route path="/preview" element={<PreviewPage />} />
+              <Route path="/view-document/:documentId" element={<ViewSignedDocumentPage user={user} />} />
+              <Route path="/*" element={<Dashboard user={user} onLogout={handleLogout} />} />
+            </>
+          )}
 
-              {showLoginModal && (
-                <LoginModal 
-                  onClose={handleCloseModals} 
-                  onSwitchToSignup={handleSwitchToSignup}
-                  onLoginSuccess={handleLoginSuccess}
-                />
-              )}
+          {/* Signature setup modal - shown after login */}
+          {isLoggedIn && user && showSignatureModal && (
+            <Route path="/*" element={<SignatureSetupModal user={user} onComplete={handleSignatureComplete} />} />
+          )}
 
-              {showSignupModal && (
-                <SignupModal 
-                  onClose={handleCloseModals} 
-                  onSwitchToLogin={handleSwitchToLogin}
-                  onLoginSuccess={handleLoginSuccess}
-                />
-              )}
+          {/* Landing page - shown when not logged in and not accessing a public link */}
+          {!isLoggedIn && (
+            <Route path="/*" element={
+              <div className="App">
+                <Header onSignInClick={handleSignInClick} />
+                <Hero onSignUpClick={handleSignUpClick} />
+                <Features />
+                <CTA onSignUpClick={handleSignUpClick} />
+                <Footer />
 
-              {showSignatureModal && (
-                <SignatureSetupModal user={user} onComplete={handleSignatureComplete} />
-              )}
-            </div>
-          } />
+                {showLoginModal && (
+                  <LoginModal 
+                    onClose={handleCloseModals} 
+                    onSwitchToSignup={handleSwitchToSignup}
+                    onLoginSuccess={handleLoginSuccess}
+                  />
+                )}
+
+                {showSignupModal && (
+                  <SignupModal 
+                    onClose={handleCloseModals} 
+                    onSwitchToLogin={handleSwitchToLogin}
+                    onLoginSuccess={handleLoginSuccess}
+                  />
+                )}
+              </div>
+            } />
+          )}
         </Routes>
       </Router>
     </GoogleOAuthProvider>
