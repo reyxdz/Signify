@@ -378,7 +378,7 @@ function DocumentSigningPage({ user }) {
       const { credential } = credentialResponse;
       
       // Send to backend to verify and login
-      const response = await fetch('http://localhost:5000/api/google-login', {
+      const response = await fetch('http://localhost:5000/google-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -395,9 +395,16 @@ function DocumentSigningPage({ user }) {
 
       const data = await response.json();
       
+      console.log('Comparing emails:');
+      console.log('  Received from Google:', data.user.email);
+      console.log('  Expected (from link):', verifiedEmail);
+      console.log('  Received (lowercase):', data.user.email.toLowerCase());
+      console.log('  Expected (lowercase):', verifiedEmail.toLowerCase());
+      console.log('  Match:', data.user.email.toLowerCase() === verifiedEmail.toLowerCase());
+      
       // Check if the Gmail matches the verified email from the link
       if (data.user && data.user.email.toLowerCase() === verifiedEmail.toLowerCase()) {
-        console.log('Email verified successfully:', data.user.email);
+        console.log('✓ Email verified successfully:', data.user.email);
         // Store token and user
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -407,7 +414,9 @@ function DocumentSigningPage({ user }) {
         // we'll just reload to complete the auth flow
         window.location.reload();
       } else {
-        console.error('Email mismatch - Gmail does not match invitation email');
+        console.error('✗ Email mismatch - Gmail does not match invitation email');
+        console.error('  Received:', data.user.email);
+        console.error('  Expected:', verifiedEmail);
         setShowVerificationError(true);
       }
     } catch (error) {
@@ -594,6 +603,9 @@ function DocumentSigningPage({ user }) {
               <h2 style={{ color: '#dc2626', marginBottom: '10px' }}>Access Denied</h2>
               <p style={{ color: '#6b7280', marginBottom: '20px' }}>
                 The Gmail account you signed in with does not match the email this document was shared with (<strong>{verifiedEmail}</strong>).
+              </p>
+              <p style={{ color: '#9ca3af', fontSize: '12px', marginBottom: '20px' }}>
+                Open the browser console (F12) to see detailed comparison logs.
               </p>
               <button 
                 onClick={() => {
