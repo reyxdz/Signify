@@ -633,8 +633,14 @@ function DocumentSigningPage({ user }) {
                 onError={handleVerificationError}
                 theme="outline"
                 size="large"
+                auto_select={false}
               />
             </div>
+
+            <p style={{ color: '#9ca3af', fontSize: '12px', marginBottom: '20px', marginTop: '10px' }}>
+              💡 Click the button above to select your Gmail account.<br/>
+              If you want to use a different account, choose it from the prompt.
+            </p>
 
             <p style={{ color: '#9ca3af', fontSize: '12px', marginBottom: '15px' }}>
               Made a mistake? <button 
