@@ -1,0 +1,43 @@
+# Environment variables (contains sensitive credentials)
+.env
+server/.env
+signify/.env
+*.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# React
+build/
+dist/
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# MongoDB
+*.db
+data/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache/
+.eslintcache
